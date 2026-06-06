@@ -21,19 +21,20 @@ async function main() {
 
   const audit = new AuditService(auditRepo);
   const webhook = new WebhookService();
+  const key = encryptionKey(process.env);
   const service = new VerificationService(
     new MockAgeProvider({ estimatedAge: 30, livenessScore: 0.95 }),
     audit,
     webhook,
     loadDecisionConfig(process.env),
-    encryptionKey(process.env),
+    key,
   );
   const store = new S3FrameStore(
     new S3Client({ region: process.env.AWS_REGION, endpoint: process.env.AWS_ENDPOINT, forcePathStyle: true }),
     process.env.FRAME_BUCKET ?? 'eca-frames-temp',
   );
   const once = new OnceGuard(new IoRedisAdapter(new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379')));
-  const processor = new VerificationProcessor(store, AppDataSource, service, once);
+  const processor = new VerificationProcessor(store, AppDataSource, service, once, key);
 
   const connection = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', { maxRetriesPerRequest: null });
   const worker = new Worker<VerificationJob>(

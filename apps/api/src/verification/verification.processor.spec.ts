@@ -2,12 +2,17 @@ import { VerificationProcessor } from './verification.processor';
 import { MemoryFrameStore } from '../storage/memory-frame-store';
 import { serializeFrame } from '../storage/frame-codec';
 import { encryptFrame } from './crypto.util';
+import { encryptSecret } from '../tenant/secret-crypto';
 
 const key = Buffer.alloc(32, 7);
 
 function fakeDataSource() {
   const manager = {
-    findOneOrFail: jest.fn(async () => ({ id: 'ten1', webhookUrl: 'http://hook', webhookSecret: 's' })),
+    findOneOrFail: jest.fn(async () => ({
+      id: 'ten1',
+      webhookUrl: 'http://hook',
+      webhookSecret: encryptSecret('s', Buffer.alloc(32, 9)),
+    })),
   };
   const qr = {
     connect: jest.fn(async () => {}),
@@ -30,7 +35,7 @@ test('fetches the frame, scopes RLS, verifies, then deletes the frame', async ()
   const ds = fakeDataSource();
   const once = freshOnce();
 
-  const proc = new VerificationProcessor(store, ds as any, service as any, once as any);
+  const proc = new VerificationProcessor(store, ds as any, service as any, once as any, Buffer.alloc(32, 9));
   await proc.process({ transactionId: 'tx1', tenantId: 'ten1', frameRef: 'tx1', rawIp: '1.2.3.4' });
 
   expect(ds.qr.query).toHaveBeenCalledWith(expect.stringContaining("set_config('app.tenant_id'"), ['ten1']);
@@ -47,7 +52,7 @@ test('deletes the frame even when verification throws', async () => {
   const ds = fakeDataSource();
   const once = freshOnce();
 
-  const proc = new VerificationProcessor(store, ds as any, service as any, once as any);
+  const proc = new VerificationProcessor(store, ds as any, service as any, once as any, Buffer.alloc(32, 9));
   await expect(proc.process({ transactionId: 'tx2', tenantId: 'ten1', frameRef: 'tx2', rawIp: '1.2.3.4' }))
     .rejects.toThrow('provider down');
   expect(ds.qr.release).toHaveBeenCalledTimes(1);
@@ -58,7 +63,7 @@ test('throws when the frame has expired/missing AND still deletes (best-effort)'
   const store = new MemoryFrameStore(() => 1000);
   const delSpy = jest.spyOn(store, 'delete');
   const service = { verify: jest.fn() };
-  const proc = new VerificationProcessor(store, fakeDataSource() as any, service as any, freshOnce() as any);
+  const proc = new VerificationProcessor(store, fakeDataSource() as any, service as any, freshOnce() as any, Buffer.alloc(32, 9));
   await expect(proc.process({ transactionId: 'gone', tenantId: 'ten1', frameRef: 'gone', rawIp: '1.2.3.4' }))
     .rejects.toThrow(/frame/i);
   expect(service.verify).not.toHaveBeenCalled();
@@ -71,7 +76,7 @@ test('skips verification when the transaction was already processed (idempotent 
   await store.put('dup', serializeFrame(enc), 300);
   const service = { verify: jest.fn() };
   const once = { acquire: jest.fn(async () => false) };
-  const proc = new VerificationProcessor(store, fakeDataSource() as any, service as any, once as any);
+  const proc = new VerificationProcessor(store, fakeDataSource() as any, service as any, once as any, Buffer.alloc(32, 9));
   await proc.process({ transactionId: 'dup', tenantId: 'ten1', frameRef: 'dup', rawIp: '1.2.3.4' });
   expect(service.verify).not.toHaveBeenCalled();
   expect(await store.get('dup')).toBeNull(); // frame still deleted
