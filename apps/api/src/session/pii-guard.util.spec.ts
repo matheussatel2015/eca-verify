@@ -11,3 +11,7 @@ test('rejects a payload containing cpf', () => {
 test('rejects a payload containing nome', () => {
   expect(() => assertNoPii({ user_hash: 'abc', nome: 'Maria' })).toThrow(/pii/i);
 });
+
+test('rejects a payload containing telefone', () => {
+  expect(() => assertNoPii({ user_hash: 'abc', telefone: '41999999999' })).toThrow(/pii/i);
+});

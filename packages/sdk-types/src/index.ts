@@ -23,4 +23,4 @@ export interface WebhookPayload {
 }
 
 // Fields that must NEVER appear in a session-open payload (PII guard).
-export const FORBIDDEN_PII_FIELDS = ['nome', 'name', 'cpf', 'email', 'e_mail'] as const;
+export const FORBIDDEN_PII_FIELDS = ['nome', 'name', 'cpf', 'email', 'e_mail', 'telefone', 'celular', 'phone', 'rg', 'data_nascimento', 'birth_date'] as const;
