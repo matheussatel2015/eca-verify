@@ -1,0 +1,8 @@
+{
+  "name": "@eca/plugin",
+  "version": "0.0.1",
+  "main": "src/index.ts",
+  "devDependencies": {
+    "esbuild": "^0.28.0"
+  }
+}

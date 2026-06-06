@@ -1,0 +1,5 @@
+POST http://localhost:3000/sessions
+Authorization: Bearer sk_REPLACE_WITH_SEEDED_KEY
+Content-Type: application/json
+
+{ "user_hash": "user_abc_123" }
