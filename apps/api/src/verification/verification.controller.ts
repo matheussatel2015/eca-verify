@@ -1,10 +1,13 @@
-import { Body, Controller, Post, Req, BadRequestException } from '@nestjs/common';
+import { Body, Controller, Post, Req, HttpCode, BadRequestException, UseGuards, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import { VerificationSession } from '../session/session.entity';
-import { Tenant } from '../tenant/tenant.entity';
-import { VerificationService } from './verification.service';
+import { serializeFrame } from '../storage/frame-codec';
+import { FRAME_STORE, FrameStorePort } from '../storage/frame-store.port';
+import { VerificationQueue } from '../queue/verification.queue';
+import { buildVerificationJob } from '../queue/verification-job';
+import { RateLimitGuard } from '../ratelimit/rate-limit.guard';
 
 interface VerifyBody {
   session_token: string;
@@ -12,14 +15,16 @@ interface VerifyBody {
 }
 
 @Controller('verify')
+@UseGuards(RateLimitGuard)
 export class VerificationController {
   constructor(
-    private readonly service: VerificationService,
     @InjectRepository(VerificationSession) private readonly sessions: Repository<VerificationSession>,
-    @InjectRepository(Tenant) private readonly tenants: Repository<Tenant>,
+    @Inject(FRAME_STORE) private readonly store: FrameStorePort,
+    private readonly queue: VerificationQueue,
   ) {}
 
   @Post()
+  @HttpCode(202)
   async verify(@Body() body: VerifyBody, @Req() req: any) {
     if (!body?.session_token || typeof body.session_token !== 'string') {
       throw new BadRequestException('session_token is required');
@@ -36,20 +41,25 @@ export class VerificationController {
       await this.sessions.delete({ id: session.id });
       throw new BadRequestException('session expired');
     }
-    // Single-use: consume the token before doing any work so a replay fails with 'invalid session_token'.
+    // Single-use: consume the token before enqueueing so a replay fails with 'invalid session_token'.
     await this.sessions.delete({ id: session.id });
-    const tenant = await this.tenants.findOneOrFail({ where: { id: session.tenantId } });
-    return this.service.verify({
-      transactionId: randomUUID(),
-      tenantId: tenant.id,
+
+    const transactionId = randomUUID();
+    const frameRef = transactionId;
+    const encryptedFrame = {
+      iv: Buffer.from(body.frame.iv, 'base64'),
+      tag: Buffer.from(body.frame.tag, 'base64'),
+      ciphertext: Buffer.from(body.frame.ciphertext, 'base64'),
+    };
+    const ttl = Number(process.env.FRAME_TTL_SECONDS ?? 300);
+    await this.store.put(frameRef, serializeFrame(encryptedFrame), ttl);
+    await this.queue.enqueue(buildVerificationJob({
+      transactionId,
+      tenantId: session.tenantId,
+      frameRef,
       rawIp: req.ip ?? '',
-      webhookUrl: tenant.webhookUrl,
-      webhookSecret: tenant.webhookSecret,
-      encryptedFrame: {
-        iv: Buffer.from(body.frame.iv, 'base64'),
-        tag: Buffer.from(body.frame.tag, 'base64'),
-        ciphertext: Buffer.from(body.frame.ciphertext, 'base64'),
-      },
-    });
+    }));
+
+    return { transaction_id: transactionId, status: 'processando' };
   }
 }
