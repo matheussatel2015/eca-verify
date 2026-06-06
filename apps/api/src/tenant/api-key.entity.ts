@@ -3,6 +3,7 @@ import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
 @Entity('api_keys')
 export class ApiKey {
   @PrimaryColumn('uuid') id!: string;
+  @Index()
   @Column({ name: 'tenant_id', type: 'uuid' }) tenantId!: string;
   @Index({ unique: true })
   @Column({ name: 'key_hash' }) keyHash!: string;
