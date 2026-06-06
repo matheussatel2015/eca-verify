@@ -11,6 +11,9 @@ export function serializeFrame(frame: EncryptedFrame): Buffer {
 
 export function deserializeFrame(bytes: Buffer): EncryptedFrame {
   const obj = JSON.parse(bytes.toString('utf8')) as { iv: string; tag: string; ciphertext: string };
+  if (typeof obj?.iv !== 'string' || typeof obj?.tag !== 'string' || typeof obj?.ciphertext !== 'string') {
+    throw new Error('deserializeFrame: missing required fields');
+  }
   return {
     iv: Buffer.from(obj.iv, 'base64'),
     tag: Buffer.from(obj.tag, 'base64'),

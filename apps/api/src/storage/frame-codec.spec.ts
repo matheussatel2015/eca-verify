@@ -13,3 +13,7 @@ test('round-trips an encrypted frame through bytes', () => {
 test('rejects corrupt serialized data', () => {
   expect(() => deserializeFrame(Buffer.from('not-json'))).toThrow();
 });
+
+test('rejects valid JSON that is missing required fields', () => {
+  expect(() => deserializeFrame(Buffer.from('{}'))).toThrow(/required fields/);
+});
