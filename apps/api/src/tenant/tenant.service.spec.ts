@@ -17,5 +17,7 @@ test('register persists a tenant with an ENCRYPTED webhook secret and issues a f
   expect(savedTenants[0].webhookUrl).toBe('https://acme.test/hook');
   const recovered = decryptSecret(savedTenants[0].webhookSecret, key);
   expect(recovered.length).toBeGreaterThanOrEqual(16);
+  expect(result.webhook_secret.startsWith('whsec_')).toBe(true);
+  expect(decryptSecret(savedTenants[0].webhookSecret, key)).toBe(result.webhook_secret);
   expect(apiKeys.issue).toHaveBeenCalledWith(savedTenants[0].id, 'default');
 });

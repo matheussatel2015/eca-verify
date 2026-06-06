@@ -11,7 +11,11 @@ export function encryptSecret(plain: string, key: Buffer): string {
 export function decryptSecret(token: string, key: Buffer): string {
   const [ivB64, tagB64, ctB64] = token.split('.');
   if (!ivB64 || !tagB64 || !ctB64) throw new Error('decryptSecret: malformed token');
-  const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(ivB64, 'base64'));
-  decipher.setAuthTag(Buffer.from(tagB64, 'base64'));
-  return Buffer.concat([decipher.update(Buffer.from(ctB64, 'base64')), decipher.final()]).toString('utf8');
+  const iv = Buffer.from(ivB64, 'base64');
+  const tag = Buffer.from(tagB64, 'base64');
+  const ct = Buffer.from(ctB64, 'base64');
+  if (iv.length !== 12 || tag.length !== 16) throw new Error('decryptSecret: invalid token structure');
+  const decipher = createDecipheriv('aes-256-gcm', key, iv);
+  decipher.setAuthTag(tag);
+  return Buffer.concat([decipher.update(ct), decipher.final()]).toString('utf8');
 }
