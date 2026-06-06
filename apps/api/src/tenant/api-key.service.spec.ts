@@ -22,7 +22,7 @@ test('issue persists a hashed key row and returns the plaintext once', async () 
 test('revoke sets revoked_at for a key owned by the tenant', async () => {
   const repo = { update: jest.fn(async () => ({ affected: 1 })) };
   const svc = new ApiKeyService(repo as any, {} as any);
-  await svc.revoke('key-1', 'tenant-1');
+  expect(await svc.revoke('key-1', 'tenant-1')).toBe(true);
   expect(repo.update).toHaveBeenCalledWith(
     { id: 'key-1', tenantId: 'tenant-1', revokedAt: expect.anything() },
     expect.objectContaining({ revokedAt: expect.any(Date) }),

@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, NotFoundException, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { TenantService } from './tenant.service';
 import { ApiKeyService } from './api-key.service';
 import { ApiKeyGuard } from './api-key.guard';
@@ -37,7 +37,8 @@ export class TenantController {
   @Delete('me/api-keys/:id')
   @UseGuards(ApiKeyGuard)
   async revoke(@Req() req: any, @Param('id') id: string) {
-    await this.apiKeys.revoke(id, req.tenant.id);
+    const ok = await this.apiKeys.revoke(id, req.tenant.id);
+    if (!ok) throw new NotFoundException('api key not found or already revoked');
     return { revoked: id };
   }
 }

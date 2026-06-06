@@ -37,8 +37,9 @@ export class ApiKeyService {
     return { id: row.id, key };
   }
 
-  async revoke(id: string, tenantId: string): Promise<void> {
-    await this.keys.update({ id, tenantId, revokedAt: IsNull() }, { revokedAt: new Date() });
+  async revoke(id: string, tenantId: string): Promise<boolean> {
+    const res = await this.keys.update({ id, tenantId, revokedAt: IsNull() }, { revokedAt: new Date() });
+    return (res.affected ?? 0) > 0;
   }
 
   async resolveTenant(presentedKey: string): Promise<Tenant | null> {
