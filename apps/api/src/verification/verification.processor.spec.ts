@@ -2,12 +2,18 @@ import { VerificationProcessor } from './verification.processor';
 import { MemoryFrameStore } from '../storage/memory-frame-store';
 import { serializeFrame } from '../storage/frame-codec';
 import { encryptFrame } from './crypto.util';
+import { encryptSecret } from '../tenant/secret-crypto';
+process.env.APP_ENCRYPTION_KEY = '09'.repeat(32); // 64 hex chars -> Buffer.alloc(32, 9)
 
 const key = Buffer.alloc(32, 7);
 
 function fakeDataSource() {
   const manager = {
-    findOneOrFail: jest.fn(async () => ({ id: 'ten1', webhookUrl: 'http://hook', webhookSecret: 's' })),
+    findOneOrFail: jest.fn(async () => ({
+      id: 'ten1',
+      webhookUrl: 'http://hook',
+      webhookSecret: encryptSecret('s', Buffer.alloc(32, 9)),
+    })),
   };
   const qr = {
     connect: jest.fn(async () => {}),
