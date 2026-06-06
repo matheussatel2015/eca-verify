@@ -26,8 +26,9 @@ export class VerificationService {
   ) {}
 
   async verify(args: VerifyArgs): Promise<WebhookPayload> {
-    const frame = decryptFrame(args.encryptedFrame, this.key);
+    let frame: Buffer = Buffer.alloc(0);
     try {
+      frame = decryptFrame(args.encryptedFrame, this.key);
       const providerResult = await this.provider.analyze(frame);
       const status = decideVerification(providerResult, this.cfg);
       const payload: WebhookPayload = {

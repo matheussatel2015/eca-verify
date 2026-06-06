@@ -28,6 +28,20 @@ test('approves an adult and dispatches an aprovado webhook', async () => {
     expect.objectContaining({ transaction_id: 'tx1', status: 'aprovado', is_over_18: true }));
 });
 
+test('rejects a tampered frame without recording audit or dispatching webhook', async () => {
+  const { svc, audit, webhook } = makeService(30, 0.95);
+  const enc = encryptFrame(Buffer.from('frame'), key);
+  enc.ciphertext[0] ^= 0xff; // tamper: GCM auth tag will no longer verify
+  await expect(
+    svc.verify({
+      transactionId: 'tx3', tenantId: 'ten1', rawIp: '1.2.3.4',
+      webhookUrl: 'http://hook', webhookSecret: 's', encryptedFrame: enc,
+    }),
+  ).rejects.toThrow();
+  expect(audit.record).not.toHaveBeenCalled();
+  expect(webhook.dispatch).not.toHaveBeenCalled();
+});
+
 test('grey-zone result yields documento_requerido', async () => {
   const { svc } = makeService(19, 0.95);
   const enc = encryptFrame(Buffer.from('frame'), key);
