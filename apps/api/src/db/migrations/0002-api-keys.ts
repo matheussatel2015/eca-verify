@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class ApiKeys0002 implements MigrationInterface {
+export class ApiKeys1717632000002 implements MigrationInterface {
   async up(q: QueryRunner): Promise<void> {
     await q.query(`
       CREATE TABLE api_keys (

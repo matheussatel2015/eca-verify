@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class InitRls0001 implements MigrationInterface {
+export class InitRls1717632000001 implements MigrationInterface {
   async up(q: QueryRunner): Promise<void> {
     await q.query(`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`);
     await q.query(`

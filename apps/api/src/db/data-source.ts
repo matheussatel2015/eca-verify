@@ -1,3 +1,4 @@
+import { join } from 'path';
 import { DataSource } from 'typeorm';
 import { Tenant } from '../tenant/tenant.entity';
 import { ApiKey } from '../tenant/api-key.entity';
@@ -8,6 +9,6 @@ export const AppDataSource = new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL,
   entities: [Tenant, ApiKey, VerificationSession, AuditLog],
-  migrations: ['src/db/migrations/*.ts'],
+  migrations: [join(__dirname, 'migrations', '*.{ts,js}')],
   synchronize: false,
 });
