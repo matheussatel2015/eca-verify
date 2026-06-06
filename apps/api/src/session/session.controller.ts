@@ -5,6 +5,7 @@ import { randomUUID, randomBytes } from 'crypto';
 import { ApiKeyGuard } from '../tenant/api-key.guard';
 import { assertNoPii } from './pii-guard.util';
 import { VerificationSession } from './session.entity';
+import { withTenantScope } from '../tenant/tenant-scope';
 
 @Controller('sessions')
 @UseGuards(ApiKeyGuard)
@@ -24,14 +25,19 @@ export class SessionController {
     if (typeof userHash !== 'string' || !userHash) {
       throw new BadRequestException('user_hash is required');
     }
+    const tenantId = req.tenant.id as string;
     const session: VerificationSession = {
       id: randomUUID(),
-      tenantId: req.tenant.id,
+      tenantId,
       userHash,
       sessionToken: randomBytes(24).toString('hex'),
       createdAt: new Date(),
     };
-    await this.sessions.save(session);
+    await this.sessions.manager.transaction(async (mgr) => {
+      await withTenantScope({ query: (sql, params) => mgr.query(sql, params) }, tenantId, async () => {
+        await mgr.save(VerificationSession, session);
+      });
+    });
     return {
       session_token: session.sessionToken,
       plugin_url: `https://verify.local/plugin?session=${session.sessionToken}`,
