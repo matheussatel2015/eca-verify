@@ -6,6 +6,7 @@ import { VerificationSession } from './session/session.entity';
 import { AuditLog } from './audit/audit-log.entity';
 import { SessionModule } from './session/session.module';
 import { VerificationModule } from './verification/verification.module';
+import { TenantModule } from './tenant/tenant.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { VerificationModule } from './verification/verification.module';
     }),
     SessionModule,
     VerificationModule,
+    TenantModule,
   ],
 })
 export class AppModule {}

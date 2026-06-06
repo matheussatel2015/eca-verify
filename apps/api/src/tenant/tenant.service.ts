@@ -5,7 +5,6 @@ import { randomUUID, randomBytes } from 'crypto';
 import { Tenant } from './tenant.entity';
 import { ApiKeyService } from './api-key.service';
 import { encryptSecret } from './secret-crypto';
-import { encryptionKey } from '../config';
 
 export const SECRET_KEY = Symbol('SECRET_KEY');
 
@@ -19,7 +18,7 @@ export class TenantService {
   constructor(
     @InjectRepository(Tenant) private readonly tenants: Repository<Tenant>,
     private readonly apiKeys: ApiKeyService,
-    @Inject(SECRET_KEY) private readonly key: Buffer = encryptionKey(process.env),
+    @Inject(SECRET_KEY) private readonly key: Buffer,
   ) {}
 
   async register(input: RegisterInput): Promise<{ tenant_id: string; api_key: string; webhook_secret: string }> {
