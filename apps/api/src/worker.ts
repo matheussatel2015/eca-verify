@@ -9,8 +9,8 @@ import { VerificationProcessor } from './verification/verification.processor';
 import { VerificationService } from './verification/verification.service';
 import { AuditService } from './audit/audit.service';
 import { WebhookService } from './webhook/webhook.service';
-import { MockAgeProvider } from './verification/mock-age-provider';
-import { loadDecisionConfig, encryptionKey } from './config';
+import { buildAgeProvider } from './verification/provider-factory';
+import { loadDecisionConfig, encryptionKey, loadProviderConfig } from './config';
 import { VERIFICATION_QUEUE_NAME, VerificationJob } from './queue/verification-job';
 import { OnceGuard } from './queue/once-guard';
 import { IoRedisAdapter } from './redis/ioredis.adapter';
@@ -23,7 +23,7 @@ async function main() {
   const webhook = new WebhookService();
   const key = encryptionKey(process.env);
   const service = new VerificationService(
-    new MockAgeProvider({ estimatedAge: 30, livenessScore: 0.95 }),
+    buildAgeProvider(loadProviderConfig(process.env)),
     audit,
     webhook,
     loadDecisionConfig(process.env),
