@@ -10,6 +10,7 @@ export class RateLimiter {
   constructor(private readonly redis: RedisLike) {}
 
   async check(key: string, limit: number, windowMs: number): Promise<RateLimitResult> {
+    // Fixed-window approximation (INCR + conditional PEXPIRE); acceptable for abuse protection. A Lua EVAL would make it strictly atomic if hard limits are ever required.
     const count = await this.redis.incr(key);
     if (count === 1) await this.redis.pexpire(key, windowMs);
     const resetMs = await this.redis.pttl(key);

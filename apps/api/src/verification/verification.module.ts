@@ -54,6 +54,7 @@ import { IoRedisAdapter } from '../redis/ioredis.adapter';
       provide: VerificationQueue,
       useFactory: () =>
         new VerificationQueue(
+          // Cast required: bullmq@5.78 bundles its own nested ioredis whose Redis type is structurally distinct from the root ioredis. Runtime accepts the instance fine.
           new Queue(VERIFICATION_QUEUE_NAME, { connection: new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', { maxRetriesPerRequest: null }) as unknown as ConnectionOptions }),
         ),
     },
