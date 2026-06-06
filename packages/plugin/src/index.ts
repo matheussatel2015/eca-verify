@@ -34,12 +34,14 @@ export async function mountEcaVerify(container: HTMLElement, opts: PluginOptions
       const frame = await captureFrame(stream);
       const enc = await encryptWithWebCrypto(frame, opts.encryptionKeyHex);
       const payload = buildVerifyPayload(opts.sessionToken, enc);
-      await fetch(`${opts.apiBase}/verify`, {
+      const res = await fetch(`${opts.apiBase}/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      container.innerHTML = '<p>Verificação enviada.</p>';
+      container.innerHTML = res.ok
+        ? '<p>Verificação enviada.</p>'
+        : '<p>Falha ao enviar a verificação. Tente novamente.</p>';
     } finally {
       stream.getTracks().forEach((t) => t.stop());
     }
