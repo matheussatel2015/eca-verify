@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Tenant } from './tenant/tenant.entity';
 import { VerificationSession } from './session/session.entity';
 import { AuditLog } from './audit/audit-log.entity';
+import { SessionModule } from './session/session.module';
+import { VerificationModule } from './verification/verification.module';
 
 @Module({
   imports: [
@@ -12,6 +14,8 @@ import { AuditLog } from './audit/audit-log.entity';
       entities: [Tenant, VerificationSession, AuditLog],
       synchronize: false,
     }),
+    SessionModule,
+    VerificationModule,
   ],
 })
 export class AppModule {}
