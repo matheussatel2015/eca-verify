@@ -6,7 +6,6 @@ import { VerificationService } from './verification.service';
 import { VerificationJob } from '../queue/verification-job';
 import { OnceGuard } from '../queue/once-guard';
 import { decryptSecret } from '../tenant/secret-crypto';
-import { encryptionKey } from '../config';
 
 export class VerificationProcessor {
   constructor(
@@ -14,6 +13,7 @@ export class VerificationProcessor {
     private readonly dataSource: DataSource,
     private readonly service: VerificationService,
     private readonly once: OnceGuard,
+    private readonly key: Buffer,
     private readonly onceTtlMs: number = 24 * 60 * 60 * 1000,
   ) {}
 
@@ -37,7 +37,7 @@ export class VerificationProcessor {
           tenantId: job.tenantId,
           rawIp: job.rawIp,
           webhookUrl: tenant.webhookUrl,
-          webhookSecret: decryptSecret(tenant.webhookSecret, encryptionKey(process.env)),
+          webhookSecret: decryptSecret(tenant.webhookSecret, this.key),
           encryptedFrame,
           auditManager: qr.manager,
         });
