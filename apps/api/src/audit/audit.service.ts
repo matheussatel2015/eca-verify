@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { EntityManager } from 'typeorm';
 import { VerificationStatus } from '@eca/sdk-types';
 import { AuditLog } from './audit-log.entity';
 import { maskIp } from './ip-mask.util';
@@ -27,7 +28,8 @@ export class AuditService {
     };
   }
 
-  async record(args: BuildArgs): Promise<void> {
-    await this.logs.save(AuditService.buildRecord(args));
+  async record(args: BuildArgs, manager?: EntityManager): Promise<void> {
+    const repo = manager ? manager.getRepository(AuditLog) : this.logs;
+    await repo.save(AuditService.buildRecord(args));
   }
 }

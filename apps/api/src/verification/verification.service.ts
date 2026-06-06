@@ -13,6 +13,7 @@ interface VerifyArgs {
   webhookUrl: string;
   webhookSecret: string;
   encryptedFrame: EncryptedFrame;
+  auditManager?: import('typeorm').EntityManager;
 }
 
 @Injectable()
@@ -36,13 +37,7 @@ export class VerificationService {
         status,
         is_over_18: isOver18(status),
       };
-      await this.audit.record({
-        transactionId: args.transactionId,
-        tenantId: args.tenantId,
-        rawIp: args.rawIp,
-        status,
-        now: new Date(),
-      });
+      await this.audit.record({ transactionId: args.transactionId, tenantId: args.tenantId, rawIp: args.rawIp, status, now: new Date() }, args.auditManager);
       await this.webhook.dispatch(args.webhookUrl, args.webhookSecret, payload);
       return payload;
     } finally {
