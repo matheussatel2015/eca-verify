@@ -34,15 +34,21 @@ export class VerificationController {
       throw new BadRequestException('frame.iv, frame.tag and frame.ciphertext are required (base64)');
     }
     // /verify is authenticated by the ephemeral, single-use session_token: the plugin runs in the END-USER browser and must not hold the tenant API key.
-    const session = await this.sessions.findOne({ where: { sessionToken: body.session_token } });
-    if (!session) throw new BadRequestException('invalid session_token');
+    // Atomically consume the single-use token (DELETE ... RETURNING) so concurrent replays cannot both pass.
+    const consumed = await this.sessions
+      .createQueryBuilder()
+      .delete()
+      .from(VerificationSession)
+      .where('session_token = :t', { t: body.session_token })
+      .returning('*')
+      .execute();
+    const row = consumed.raw?.[0] as { tenant_id: string; created_at: string | Date } | undefined;
+    if (!row) throw new BadRequestException('invalid session_token');
+    const createdAt = new Date(row.created_at);
     const SESSION_TTL_MS = Number(process.env.SESSION_TTL_SECONDS ?? 900) * 1000;
-    if (Date.now() - session.createdAt.getTime() > SESSION_TTL_MS) {
-      await this.sessions.delete({ id: session.id });
+    if (Date.now() - createdAt.getTime() > SESSION_TTL_MS) {
       throw new BadRequestException('session expired');
     }
-    // Single-use: consume the token before enqueueing so a replay fails with 'invalid session_token'.
-    await this.sessions.delete({ id: session.id });
 
     const transactionId = randomUUID();
     const frameRef = transactionId;
@@ -55,7 +61,7 @@ export class VerificationController {
     await this.store.put(frameRef, serializeFrame(encryptedFrame), ttl);
     await this.queue.enqueue(buildVerificationJob({
       transactionId,
-      tenantId: session.tenantId,
+      tenantId: row.tenant_id,
       frameRef,
       rawIp: req.ip ?? '',
     }));
