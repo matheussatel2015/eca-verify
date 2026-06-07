@@ -90,3 +90,24 @@ test('applySubscriptionChange ignores an unknown plan', async () => {
   await svc.applySubscriptionChange({ tenantId: 'ten1', planId: 'bogus' });
   expect(tenants.update).not.toHaveBeenCalled();
 });
+
+test('resolveAndApplyWebhook applies when the provider returns a change', async () => {
+  const tenants = { update: jest.fn(async () => ({ affected: 1 })) };
+  const payment = {
+    createCheckout: jest.fn(),
+    resolveWebhook: jest.fn(async () => ({ tenantId: 'ten1', planId: 'pro', stripeCustomerId: 'cus_1' })),
+  };
+  const svc = new BillingService(tenants as any, {} as any, payment as any);
+  const applied = await svc.resolveAndApplyWebhook(Buffer.from('{}'), 'sig');
+  expect(applied).toBe(true);
+  expect(tenants.update).toHaveBeenCalledWith({ id: 'ten1' }, expect.objectContaining({ planId: 'pro', stripeCustomerId: 'cus_1' }));
+});
+
+test('resolveAndApplyWebhook no-ops when the provider returns null', async () => {
+  const tenants = { update: jest.fn() };
+  const payment = { createCheckout: jest.fn(), resolveWebhook: jest.fn(async () => null) };
+  const svc = new BillingService(tenants as any, {} as any, payment as any);
+  const applied = await svc.resolveAndApplyWebhook(Buffer.from('nope'), '');
+  expect(applied).toBe(false);
+  expect(tenants.update).not.toHaveBeenCalled();
+});

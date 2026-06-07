@@ -22,6 +22,13 @@ export class BillingService {
     return this.payment.createCheckout({ tenantId, planId });
   }
 
+  async resolveAndApplyWebhook(rawBody: Buffer, signature: string): Promise<boolean> {
+    const change = await this.payment.resolveWebhook(rawBody, signature);
+    if (!change || !change.tenantId) return false;
+    await this.applySubscriptionChange(change);
+    return true;
+  }
+
   async applySubscriptionChange(change: SubscriptionChange): Promise<void> {
     if (!isValidPlanId(change.planId)) return; // ignore unknown plans defensively
     await this.tenants.update(
