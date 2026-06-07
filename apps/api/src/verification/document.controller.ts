@@ -37,11 +37,13 @@ export class DocumentController {
       throw new BadRequestException('document and selfie images are required (base64 iv/tag/ciphertext)');
     }
     // Atomic single-use consumption of the document session token (replay-safe).
-    const consumed = await this.sessions.createQueryBuilder()
-      .delete().from(DocumentSession)
-      .where('session_token = :t', { t: body.document_session_token })
-      .returning('*').execute();
-    const row = consumed.raw?.[0] as { tenant_id: string; transaction_id: string; created_at: string | Date } | undefined;
+    // Cross-tenant by design (the plugin holds only the secret token), so it runs through
+    // the SECURITY DEFINER consume_document_session() fn rather than relying on RLS bypass.
+    const consumedRows = (await this.sessions.manager.query(
+      `SELECT tenant_id, transaction_id, created_at FROM consume_document_session($1)`,
+      [body.document_session_token],
+    )) as Array<{ tenant_id: string; transaction_id: string; created_at: string | Date }>;
+    const row = consumedRows?.[0];
     if (!row) throw new BadRequestException('invalid document_session_token');
     const SESSION_TTL_MS = Number(process.env.SESSION_TTL_SECONDS ?? 900) * 1000;
     if (Date.now() - new Date(row.created_at).getTime() > SESSION_TTL_MS) {
