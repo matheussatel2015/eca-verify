@@ -1,5 +1,31 @@
 # Local development infrastructure for ECA Verify.
 # Credentials here are LOCAL DEV ONLY — never reuse in any shared/remote environment.
+
+# Shared app environment for api/worker/migrate. Service hostnames (postgres/redis/minio)
+# are used instead of localhost because these run on the compose network.
+x-app-env: &app-env
+  DATABASE_URL: postgres://eca:eca@postgres:5432/eca_verify
+  REDIS_URL: redis://redis:6379
+  AWS_ENDPOINT: http://minio:9000
+  AWS_ACCESS_KEY_ID: minioadmin
+  AWS_SECRET_ACCESS_KEY: minioadmin
+  AWS_REGION: us-east-1
+  FRAME_BUCKET: eca-frames-temp
+  APP_ENCRYPTION_KEY: f56ec761ca1d3117a663e0c8873242775bebbdd36475de106d271930d9f8578a
+  AGE_PROVIDER_KIND: mock
+  DOC_VERIFIER_KIND: mock
+  CUTOFF_AGE: "18"
+  DECISION_MARGIN: "3"
+  LIVENESS_THRESHOLD: "0.8"
+  SESSION_TTL_SECONDS: "900"
+  RATE_LIMIT_PER_MIN: "60"
+  FRAME_TTL_SECONDS: "300"
+  DOC_FACEMATCH_MIN: "0.8"
+  PROOF_ISSUER: eca-verify
+  MODEL_VERSION: mock-1
+  # PROOF_PRIVATE_KEY is derived at container start from PROOF_PRIVATE_KEY_B64 (see command).
+  # PROOF_PRIVATE_KEY_B64 comes from the gitignored .env.docker via env_file.
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -21,6 +47,11 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   minio:
     image: minio/minio
@@ -33,6 +64,88 @@ services:
       - "9001:9001"
     volumes:
       - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-off: create the frame bucket on MinIO.
+  createbucket:
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb --ignore-existing local/eca-frames-temp &&
+      echo 'bucket eca-frames-temp ready'
+      "
+
+  # One-off: run TypeORM migrations, then exit 0.
+  migrate:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      <<: *app-env
+    command: npx typeorm-ts-node-commonjs migration:run -d apps/api/src/db/data-source.ts
+
+  # Tiny HTTP echo server: 200s any request so tenant webhooks succeed during the test.
+  webhook-echo:
+    image: mendhak/http-https-echo:31
+    environment:
+      HTTP_PORT: "8080"
+    ports:
+      - "8080:8080"
+
+  api:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      <<: *app-env
+    env_file:
+      - path: .env.docker
+        required: false
+    ports:
+      - "3000:3000"
+    command: >
+      /bin/sh -c "
+      if [ -n \"$$PROOF_PRIVATE_KEY_B64\" ]; then export PROOF_PRIVATE_KEY=$$(echo \"$$PROOF_PRIVATE_KEY_B64\" | base64 -d); fi;
+      exec npx ts-node apps/api/src/main.ts
+      "
+
+  worker:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      <<: *app-env
+    env_file:
+      - path: .env.docker
+        required: false
+    command: >
+      /bin/sh -c "
+      if [ -n \"$$PROOF_PRIVATE_KEY_B64\" ]; then export PROOF_PRIVATE_KEY=$$(echo \"$$PROOF_PRIVATE_KEY_B64\" | base64 -d); fi;
+      exec npx ts-node apps/api/src/worker.ts
+      "
 
 volumes:
   postgres-data:

@@ -1,15 +1,16 @@
-import { Controller, Get, NotFoundException, Optional, Param, Req, ServiceUnavailableException, UseGuards } from '@nestjs/common';
+import { Controller, Get, Inject, NotFoundException, Optional, Param, Req, ServiceUnavailableException, UseGuards } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { ApiKeyGuard } from '../tenant/api-key.guard';
 import { runScoped } from '../tenant/tenant-scope';
 import { VerificationRecord } from '../verification/verification-record.entity';
 import { ProofService } from './proof.service';
+import { PROOF_SERVICE } from './proof.token';
 
 @Controller()
 export class ProofController {
   constructor(
     private readonly dataSource: DataSource,
-    @Optional() private readonly proof: ProofService | null,
+    @Optional() @Inject(PROOF_SERVICE) private readonly proof: ProofService | null,
   ) {}
 
   // Public JWKS so anyone (tenant, auditor, ANPD) can verify a proof without a shared secret.
