@@ -44,6 +44,26 @@ export function loadProviderConfig(env: NodeJS.ProcessEnv): ProviderConfig {
   return cfg;
 }
 
+export type PaymentKind = 'mock' | 'stripe';
+
+export interface PaymentConfig {
+  kind: PaymentKind;
+  stripeSecretKey: string;
+  stripeWebhookSecret: string;
+  successUrl: string;
+  cancelUrl: string;
+}
+
+export function loadPaymentConfig(env: NodeJS.ProcessEnv): PaymentConfig {
+  return {
+    kind: (env.PAYMENT_PROVIDER_KIND ?? 'mock') as PaymentKind,
+    stripeSecretKey: env.STRIPE_SECRET_KEY ?? '',
+    stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET ?? '',
+    successUrl: env.CHECKOUT_SUCCESS_URL ?? 'http://localhost:3000/dashboard?checkout=success',
+    cancelUrl: env.CHECKOUT_CANCEL_URL ?? 'http://localhost:3000/dashboard?checkout=cancel',
+  };
+}
+
 export function loadProofPrivateKeyPem(env: NodeJS.ProcessEnv): string | undefined {
   return env.PROOF_PRIVATE_KEY && env.PROOF_PRIVATE_KEY.trim() ? env.PROOF_PRIVATE_KEY : undefined;
 }
