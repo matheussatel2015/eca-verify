@@ -50,7 +50,8 @@ export class BillingController {
   @HttpCode(202)
   async stripeWebhook(@Req() req: any) {
     const signature = req.headers['stripe-signature'] ?? '';
-    const raw: Buffer = req.rawBody ?? Buffer.from(JSON.stringify(req.body ?? {}));
+    const raw: Buffer | undefined = req.rawBody;
+    if (!raw) throw new BadRequestException('rawBody unavailable (NestFactory rawBody:true required)');
     const change = await this.billing.resolveAndApplyWebhook(raw, signature);
     return { received: true, applied: !!change };
   }
