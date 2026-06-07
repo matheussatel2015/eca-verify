@@ -38,7 +38,8 @@ async function main() {
     new S3Client({ region: process.env.AWS_REGION, endpoint: process.env.AWS_ENDPOINT, forcePathStyle: true }),
     process.env.FRAME_BUCKET ?? 'eca-frames-temp',
   );
-  const once = new OnceGuard(new IoRedisAdapter(new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379')));
+  const onceRedis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379');
+  const once = new OnceGuard(new IoRedisAdapter(onceRedis));
   const processor = new VerificationProcessor(store, AppDataSource, service, once, key);
   const documentProcessor = new DocumentProcessor(
     store,
@@ -67,7 +68,14 @@ async function main() {
     { connection: documentConnection as unknown as ConnectionOptions, concurrency: Number(process.env.WORKER_CONCURRENCY ?? 8) },
   );
 
-  const shutdown = async () => { await worker.close(); await documentWorker.close(); process.exit(0); };
+  const shutdown = async () => {
+    // Order: stop accepting/processing jobs, release redis connections, then close the DB pool.
+    await worker.close();
+    await documentWorker.close();
+    await Promise.all([connection.quit(), documentConnection.quit(), onceRedis.quit()]);
+    await AppDataSource.destroy();
+    process.exit(0);
+  };
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
 

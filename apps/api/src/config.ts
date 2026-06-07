@@ -49,3 +49,45 @@ export function encryptionKey(env: NodeJS.ProcessEnv): Buffer {
   if (hex.length !== 64) throw new Error('APP_ENCRYPTION_KEY must be 32 bytes (64 hex chars)');
   return Buffer.from(hex, 'hex');
 }
+
+const NUMERIC_ENV_VARS = [
+  'CUTOFF_AGE',
+  'DECISION_MARGIN',
+  'LIVENESS_THRESHOLD',
+  'RATE_LIMIT_PER_MIN',
+  'FRAME_TTL_SECONDS',
+  'SESSION_TTL_SECONDS',
+] as const;
+
+/**
+ * Fail-fast validation of required environment variables at boot.
+ * Throws an Error with a clear message describing the first problem found.
+ */
+export function validateEnv(env: NodeJS.ProcessEnv): void {
+  if (!env.DATABASE_URL || env.DATABASE_URL.trim() === '') {
+    throw new Error('DATABASE_URL is required');
+  }
+
+  const key = env.APP_ENCRYPTION_KEY ?? '';
+  if (key.length !== 64 || !/^[0-9a-fA-F]{64}$/.test(key)) {
+    throw new Error('APP_ENCRYPTION_KEY must be 32 bytes (64 hex chars)');
+  }
+
+  for (const name of NUMERIC_ENV_VARS) {
+    const raw = env[name];
+    if (raw === undefined) continue; // absent vars fall back to code defaults
+    if (!Number.isFinite(Number(raw))) {
+      throw new Error(`${name} must be a finite number (got "${raw}")`);
+    }
+  }
+
+  const usesCaf = env.AGE_PROVIDER_KIND === 'caf' || env.DOC_VERIFIER_KIND === 'caf';
+  if (usesCaf) {
+    const missing = (['CAF_BASE_URL', 'CAF_CLIENT_ID', 'CAF_CLIENT_SECRET'] as const).filter(
+      (name) => !env[name] || env[name]!.trim() === '',
+    );
+    if (missing.length > 0) {
+      throw new Error(`CAF provider selected but missing credentials: ${missing.join(', ')}`);
+    }
+  }
+}
