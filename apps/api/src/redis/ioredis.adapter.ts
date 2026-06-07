@@ -7,6 +7,9 @@ export class IoRedisAdapter implements RedisLike {
   incr(key: string): Promise<number> {
     return this.client.incr(key);
   }
+  decr(key: string): Promise<number> {
+    return this.client.decr(key);
+  }
   async pexpire(key: string, ms: number): Promise<void> {
     await this.client.pexpire(key, ms);
   }
