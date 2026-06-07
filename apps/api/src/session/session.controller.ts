@@ -7,7 +7,6 @@ import { assertNoPii } from './pii-guard.util';
 import { VerificationSession } from './session.entity';
 import { withTenantScope } from '../tenant/tenant-scope';
 import { BillingService } from '../billing/billing.service';
-import { UsageService } from '../billing/usage.service';
 
 @Controller('sessions')
 @UseGuards(ApiKeyGuard)
@@ -15,7 +14,6 @@ export class SessionController {
   constructor(
     @InjectRepository(VerificationSession) private readonly sessions: Repository<VerificationSession>,
     private readonly billing: BillingService,
-    private readonly usage: UsageService,
   ) {}
 
   @Post()
@@ -30,7 +28,7 @@ export class SessionController {
       throw new BadRequestException('user_hash is required');
     }
     const tenantId = req.tenant.id as string;
-    await this.billing.assertWithinQuota(tenantId); // throws 402 when over the monthly quota
+    await this.billing.consumeQuota(tenantId); // atomically consumes quota; throws 402 when over the monthly quota
     const session: VerificationSession = {
       id: randomUUID(),
       tenantId,
@@ -43,7 +41,6 @@ export class SessionController {
         await mgr.save(VerificationSession, session);
       });
     });
-    await this.usage.increment(tenantId);
     return {
       session_token: session.sessionToken,
       plugin_url: `https://verify.local/plugin?session=${session.sessionToken}`,

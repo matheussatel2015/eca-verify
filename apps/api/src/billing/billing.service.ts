@@ -25,6 +25,23 @@ export class BillingService {
     }
   }
 
+  /**
+   * Atomically consume one unit of quota. Replaces the assertWithinQuota +
+   * usage.increment two-step (which had a check-then-act race) with a single
+   * atomic increment-and-check. Throws 402 when the plan quota is exhausted.
+   */
+  async consumeQuota(tenantId: string): Promise<void> {
+    const tenant = await this.tenants.findOneOrFail({ where: { id: tenantId } });
+    const plan = getPlan(tenant.planId);
+    const { allowed } = await this.usage.incrementAndCheck(tenantId, plan.monthlyQuota);
+    if (!allowed) {
+      throw new HttpException(
+        `monthly quota of ${plan.monthlyQuota} reached for plan '${plan.id}'`,
+        HttpStatus.PAYMENT_REQUIRED,
+      );
+    }
+  }
+
   async changePlan(tenantId: string, planId: string): Promise<void> {
     if (!isValidPlanId(planId)) {
       throw new HttpException(`unknown plan '${planId}'`, HttpStatus.BAD_REQUEST);

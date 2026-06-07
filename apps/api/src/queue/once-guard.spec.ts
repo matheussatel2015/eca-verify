@@ -4,6 +4,7 @@ import { RedisLike } from '../redis/redis-like';
 class FakeRedis implements RedisLike {
   keys = new Set<string>();
   async incr() { return 1; }
+  async decr() { return 0; }
   async pexpire() {}
   async pttl() { return 0; }
   async setNx(key: string) { if (this.keys.has(key)) return false; this.keys.add(key); return true; }
