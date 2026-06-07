@@ -16,6 +16,10 @@ export interface DecisionConfig {
   livenessThreshold: number;
 }
 
+// Faixas etárias (defaults sensatos alinhados ao ECA — CONFIRMAR COM JURÍDICO).
+export const AGE_BANDS = ['crianca', 'adolescente_jovem', 'adolescente', 'adulto'] as const;
+export type AgeBand = typeof AGE_BANDS[number];
+
 export interface WebhookPayload {
   transaction_id: string;
   status: VerificationStatus;
