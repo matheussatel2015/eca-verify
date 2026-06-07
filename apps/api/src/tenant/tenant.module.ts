@@ -7,6 +7,10 @@ import { ApiKeyService } from './api-key.service';
 import { TenantService, SECRET_KEY } from './tenant.service';
 import { TenantController } from './tenant.controller';
 import { encryptionKey } from '../config';
+import Redis from 'ioredis';
+import { RateLimitGuard, RATE_LIMITER } from '../ratelimit/rate-limit.guard';
+import { RateLimiter } from '../ratelimit/rate-limiter';
+import { IoRedisAdapter } from '../redis/ioredis.adapter';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Tenant, ApiKey])],
@@ -16,6 +20,11 @@ import { encryptionKey } from '../config';
     ApiKeyGuard,
     ApiKeyService,
     TenantService,
+    {
+      provide: RATE_LIMITER,
+      useFactory: () => new RateLimiter(new IoRedisAdapter(new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379'))),
+    },
+    RateLimitGuard,
   ],
   exports: [ApiKeyGuard, ApiKeyService, TypeOrmModule],
 })

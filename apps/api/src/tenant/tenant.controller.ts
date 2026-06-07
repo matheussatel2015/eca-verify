@@ -2,6 +2,7 @@ import { BadRequestException, Body, Controller, Delete, NotFoundException, Param
 import { TenantService } from './tenant.service';
 import { ApiKeyService } from './api-key.service';
 import { ApiKeyGuard } from './api-key.guard';
+import { RateLimitGuard } from '../ratelimit/rate-limit.guard';
 
 interface RegisterBody {
   name?: unknown;
@@ -16,6 +17,7 @@ export class TenantController {
   ) {}
 
   @Post('register')
+  @UseGuards(RateLimitGuard)
   async register(@Body() body: RegisterBody) {
     if (typeof body.name !== 'string' || !body.name.trim()) {
       throw new BadRequestException('name is required');
