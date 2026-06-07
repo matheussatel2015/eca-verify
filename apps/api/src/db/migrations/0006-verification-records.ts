@@ -17,6 +17,7 @@ export class VerificationRecords1717632000006 implements MigrationInterface {
         provider text NOT NULL,
         model_version text NOT NULL,
         decision_reason text NOT NULL,
+        proof_jwt text,
         created_at timestamptz NOT NULL DEFAULT now()
       )`);
     await q.query(`CREATE INDEX idx_vrec_tenant_created ON verification_records (tenant_id, created_at DESC)`);

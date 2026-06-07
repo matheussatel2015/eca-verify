@@ -51,15 +51,19 @@ export class DocumentProcessor {
       await runScoped(this.dataSource, job.tenantId, async (mgr) => {
         const tenant = await mgr.findOneOrFail(Tenant, { where: { id: job.tenantId } });
         await this.audit.record({ transactionId: job.transactionId, tenantId: job.tenantId, rawIp: job.rawIp, status, now: new Date() }, mgr);
-        await this.records.saveWith(mgr, buildDocumentRecord({
+        // Sign the proof first so it can be stored verbatim alongside the method trail.
+        const signedJwt = this.proof
+          ? await this.proof.sign({ transaction_id: job.transactionId, tenant_id: job.tenantId, status, is_over_18: payload.is_over_18, method: 'document' })
+          : null;
+        if (signedJwt) payload.proof = signedJwt;
+        const record = buildDocumentRecord({
           transactionId: job.transactionId, tenantId: job.tenantId, status,
           ageFromDoc, faceMatchScore: out.faceMatchScore, cutoffAge: this.cfg.cutoffAge,
           provider: process.env.DOC_VERIFIER_KIND ?? 'mock', modelVersion: process.env.MODEL_VERSION ?? 'mock-1',
           now: new Date(),
-        }) as any);
-        if (this.proof) {
-          payload.proof = await this.proof.sign({ transaction_id: job.transactionId, tenant_id: job.tenantId, status, is_over_18: payload.is_over_18, method: 'document' });
-        }
+        }) as any;
+        record.proofJwt = signedJwt ?? null;
+        await this.records.saveWith(mgr, record);
         await this.webhook.dispatch(tenant.webhookUrl, decryptSecret(tenant.webhookSecret, this.key), payload);
       });
     } finally {

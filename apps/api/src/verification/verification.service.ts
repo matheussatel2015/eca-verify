@@ -50,21 +50,23 @@ export class VerificationService {
         payload.document_session_token = await args.issueDocumentSession();
       }
       await this.audit.record({ transactionId: args.transactionId, tenantId: args.tenantId, rawIp: args.rawIp, status, now: new Date() }, args.auditManager);
+      // Sign the proof first so it can be stored verbatim alongside the method trail.
+      const signedJwt = this.proof
+        ? await this.proof.sign({
+            transaction_id: args.transactionId, tenant_id: args.tenantId,
+            status, is_over_18: payload.is_over_18, method: 'age_liveness',
+          })
+        : null;
+      if (signedJwt) payload.proof = signedJwt;
       // Auditable method trail (no biometrics) — persisted on the RLS-scoped manager when provided.
       if (args.recordManager) {
         const record = buildAgeRecord({
           transactionId: args.transactionId, tenantId: args.tenantId,
           result: providerResult, cfg: this.cfg, status,
           provider: args.provider ?? 'mock', modelVersion: args.modelVersion ?? 'unknown', now: new Date(),
-        });
-        await this.records.saveWith(args.recordManager, record as any);
-      }
-      // Signed proof artifact for the tenant's evidence (if proof signing is configured).
-      if (this.proof) {
-        payload.proof = await this.proof.sign({
-          transaction_id: args.transactionId, tenant_id: args.tenantId,
-          status, is_over_18: payload.is_over_18, method: 'age_liveness',
-        });
+        }) as any;
+        record.proofJwt = signedJwt ?? null;
+        await this.records.saveWith(args.recordManager, record);
       }
       await this.webhook.dispatch(args.webhookUrl, args.webhookSecret, payload);
       return payload;

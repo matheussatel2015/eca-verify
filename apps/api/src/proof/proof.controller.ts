@@ -19,18 +19,15 @@ export class ProofController {
     return { keys: [await this.proof.publicJwk()] };
   }
 
-  // Re-issue the signed proof for one of the caller's own transactions (RLS-scoped).
+  // Return the stored signed proof for one of the caller's own transactions (RLS-scoped).
   @Get('verifications/:id/proof')
   @UseGuards(ApiKeyGuard)
   async getProof(@Req() req: any, @Param('id') id: string) {
-    if (!this.proof) throw new ServiceUnavailableException('proof signing not configured');
     const rec = await runScoped(this.dataSource, req.tenant.id, (mgr) =>
       mgr.findOne(VerificationRecord, { where: { id } }),
     );
     if (!rec) throw new NotFoundException('verification not found');
-    const jwt = await this.proof.sign({
-      transaction_id: rec.id, tenant_id: rec.tenantId, status: rec.status, is_over_18: rec.isOver18, method: rec.method,
-    });
-    return { transaction_id: rec.id, proof: jwt };
+    if (!rec.proofJwt) throw new NotFoundException('no proof available for this transaction');
+    return { transaction_id: rec.id, proof: rec.proofJwt };
   }
 }

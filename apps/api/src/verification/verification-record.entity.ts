@@ -16,5 +16,6 @@ export class VerificationRecord {
   @Column() provider!: string; // 'mock' | 'caf'
   @Column({ name: 'model_version' }) modelVersion!: string;
   @Column({ name: 'decision_reason' }) decisionReason!: string;
+  @Column({ name: 'proof_jwt', type: 'text', nullable: true }) proofJwt!: string | null;
   @Column({ name: 'created_at', type: 'timestamptz' }) createdAt!: Date;
 }
