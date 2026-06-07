@@ -28,9 +28,11 @@ export class DashboardService {
 
   async getStats(tenantId: string, from: Date, to: Date): Promise<StatsSummary> {
     return this.scoped(tenantId, async (mgr) => {
+      // Explicit tenant_id predicate (defense-in-depth): the app DB role bypasses
+      // RLS (rolbypassrls=t), so set_config scoping alone is not sufficient.
       const rows = await mgr.query(
-        `SELECT status, COUNT(*)::int AS count FROM audit_logs WHERE created_at BETWEEN $1 AND $2 GROUP BY status`,
-        [from, to],
+        `SELECT status, COUNT(*)::int AS count FROM audit_logs WHERE tenant_id = $1 AND created_at BETWEEN $2 AND $3 GROUP BY status`,
+        [tenantId, from, to],
       );
       return shapeStats(rows);
     });
@@ -38,14 +40,16 @@ export class DashboardService {
 
   async getAudit(tenantId: string, page: Pagination, status?: string): Promise<AuditPage> {
     return this.scoped(tenantId, async (mgr) => {
-      const where = status ? `WHERE status = $3` : ``;
+      // Explicit tenant_id predicate (defense-in-depth): the app DB role bypasses
+      // RLS (rolbypassrls=t), so set_config scoping alone is not sufficient.
+      const itemsWhere = status ? `WHERE tenant_id = $1 AND status = $4` : `WHERE tenant_id = $1`;
       const items = await mgr.query(
-        `SELECT id, masked_ip, status, created_at FROM audit_logs ${where} ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
-        status ? [page.limit, page.offset, status] : [page.limit, page.offset],
+        `SELECT id, masked_ip, status, created_at FROM audit_logs ${itemsWhere} ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+        status ? [tenantId, page.limit, page.offset, status] : [tenantId, page.limit, page.offset],
       );
       const countRows = await mgr.query(
-        `SELECT COUNT(*)::int AS count FROM audit_logs ${status ? 'WHERE status = $1' : ''}`,
-        status ? [status] : [],
+        `SELECT COUNT(*)::int AS count FROM audit_logs ${status ? 'WHERE tenant_id = $1 AND status = $2' : 'WHERE tenant_id = $1'}`,
+        status ? [tenantId, status] : [tenantId],
       );
       return { items, total: countRows[0]?.count ?? 0, limit: page.limit, offset: page.offset };
     });
