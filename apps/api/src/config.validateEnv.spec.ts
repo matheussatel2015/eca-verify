@@ -74,3 +74,27 @@ test('accepts stripe payment provider when all keys are present', () => {
   });
   expect(() => validateEnv(env)).not.toThrow();
 });
+
+function validProdEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
+  return validEnv({
+    NODE_ENV: 'production',
+    PAYMENT_PROVIDER_KIND: 'stripe',
+    STRIPE_SECRET_KEY: 'sk_test_x',
+    STRIPE_WEBHOOK_SECRET: 'whsec_x',
+    STRIPE_PRICE_PRO: 'price_pro',
+    STRIPE_PRICE_SCALE: 'price_scale',
+    ...overrides,
+  });
+}
+
+test('throws in production when DASHBOARD_JWT_SECRET is the dev default', () => {
+  expect(() =>
+    validateEnv(validProdEnv({ DASHBOARD_JWT_SECRET: 'dev-dashboard-secret-change-me' })),
+  ).toThrow(/DASHBOARD_JWT_SECRET/);
+});
+
+test('accepts production when DASHBOARD_JWT_SECRET is a real secret', () => {
+  expect(() =>
+    validateEnv(validProdEnv({ DASHBOARD_JWT_SECRET: 'a-real-production-secret-value' })),
+  ).not.toThrow();
+});

@@ -1,5 +1,5 @@
 import { Controller, Get, Header, Query, Req, UseGuards } from '@nestjs/common';
-import { ApiKeyGuard } from '../tenant/api-key.guard';
+import { DashboardAuthGuard } from '../auth/dashboard-auth.guard';
 import { DashboardService } from './dashboard.service';
 import { parsePagination } from './pagination';
 import { DASHBOARD_HTML } from './dashboard.page';
@@ -19,7 +19,7 @@ export class DashboardController {
   }
 
   @Get('stats')
-  @UseGuards(ApiKeyGuard)
+  @UseGuards(DashboardAuthGuard)
   async stats(@Req() req: any, @Query('from') from?: string, @Query('to') to?: string) {
     const toDate = to ? new Date(to) : new Date();
     const fromDate = from ? new Date(from) : new Date(toDate.getTime() - THIRTY_DAYS_MS);
@@ -28,7 +28,7 @@ export class DashboardController {
   }
 
   @Get('audit')
-  @UseGuards(ApiKeyGuard)
+  @UseGuards(DashboardAuthGuard)
   async audit(@Req() req: any, @Query() q: Record<string, unknown>) {
     const status = typeof q.status === 'string' && q.status ? q.status : undefined;
     return this.service.getAudit(req.tenant.id, parsePagination(q), status);

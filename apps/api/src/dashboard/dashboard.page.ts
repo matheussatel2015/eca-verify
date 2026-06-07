@@ -229,6 +229,9 @@ export const DASHBOARD_HTML = `<!doctype html>
     </div>
   </div>
   <div class="controls">
+    <label class="field"><span>Email</span><input id="email" type="email" placeholder="email" autocomplete="username"/></label>
+    <label class="field"><span>Senha</span><input id="pass" type="password" placeholder="senha" autocomplete="current-password"/></label>
+    <button id="login">Entrar</button>
     <label class="field"><span>API Key</span><input id="key" type="password" placeholder="sk_..." size="24"/></label>
     <label class="field"><span>De</span><input id="from" type="date"/></label>
     <label class="field"><span>Até</span><input id="to" type="date"/></label>
@@ -255,7 +258,21 @@ export const DASHBOARD_HTML = `<!doctype html>
 <script>
 const COLORS = { aprovado: '#38d39f', reprovado: '#ff6b81', documento_requerido: '#ffb454' };
 const LABELS = { aprovado: 'aprovado', reprovado: 'reprovado', documento_requerido: 'documento' };
-function headers() { return { Authorization: 'Bearer ' + document.getElementById('key').value.trim() }; }
+let authToken = '';
+function headers() {
+  const bearer = authToken || document.getElementById('key').value.trim();
+  return { Authorization: 'Bearer ' + bearer };
+}
+async function login() {
+  const err = document.getElementById('err'); err.textContent = '';
+  try {
+    const res = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: document.getElementById('email').value, password: document.getElementById('pass').value }) });
+    if (!res.ok) throw new Error('login ' + res.status);
+    authToken = (await res.json()).token;
+    await load();
+  } catch (e) { err.textContent = 'Falha no login: ' + e.message; }
+}
 function qs(o) { return Object.entries(o).filter(([,v]) => v).map(([k,v]) => k+'='+encodeURIComponent(v)).join('&'); }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 async function load() {
@@ -297,6 +314,7 @@ function renderRows(items) {
     + '</td><td class="muted">' + esc(new Date(r.created_at).toLocaleString('pt-BR')) + '</td></tr>').join('');
 }
 document.getElementById('load').addEventListener('click', load);
+document.getElementById('login').addEventListener('click', login);
 </script>
 </body>
 </html>`;

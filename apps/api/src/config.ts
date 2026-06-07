@@ -76,6 +76,14 @@ export function modelVersion(env: NodeJS.ProcessEnv): string {
   return env.MODEL_VERSION ?? 'mock-1';
 }
 
+export function dashboardJwtSecret(env: NodeJS.ProcessEnv): string {
+  return env.DASHBOARD_JWT_SECRET ?? 'dev-dashboard-secret-change-me';
+}
+
+export function dashboardJwtTtl(env: NodeJS.ProcessEnv): string {
+  return env.DASHBOARD_JWT_TTL ?? '1h';
+}
+
 export function encryptionKey(env: NodeJS.ProcessEnv): Buffer {
   const hex = env.APP_ENCRYPTION_KEY ?? '';
   if (hex.length !== 64) throw new Error('APP_ENCRYPTION_KEY must be 32 bytes (64 hex chars)');
@@ -127,6 +135,10 @@ export function validateEnv(env: NodeJS.ProcessEnv): void {
   const isProduction = (env.NODE_ENV ?? process.env.NODE_ENV) === 'production';
   if (isProduction && paymentKind === 'mock') {
     throw new Error('PAYMENT_PROVIDER_KIND must be "stripe" in production');
+  }
+
+  if (isProduction && (!env.DASHBOARD_JWT_SECRET || env.DASHBOARD_JWT_SECRET === 'dev-dashboard-secret-change-me')) {
+    throw new Error('DASHBOARD_JWT_SECRET must be set in production');
   }
 
   if (paymentKind === 'stripe') {
