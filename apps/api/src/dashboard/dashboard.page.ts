@@ -44,6 +44,7 @@ export const DASHBOARD_HTML = `<!doctype html>
 const COLORS = { aprovado: '#2f9e44', reprovado: '#e03131', documento_requerido: '#f08c00' };
 function headers() { return { Authorization: 'Bearer ' + document.getElementById('key').value.trim() }; }
 function qs(o) { return Object.entries(o).filter(([,v]) => v).map(([k,v]) => k+'='+encodeURIComponent(v)).join('&'); }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 async function load() {
   const err = document.getElementById('err'); err.textContent = '';
   const from = document.getElementById('from').value, to = document.getElementById('to').value;
@@ -76,8 +77,8 @@ function renderChart(by) {
 function renderRows(items) {
   const tb = document.getElementById('rows');
   if (!items || !items.length) { tb.innerHTML = '<tr><td colspan="4" class="muted">Sem eventos no período.</td></tr>'; return; }
-  tb.innerHTML = items.map(r => '<tr><td>' + r.id + '</td><td>' + r.status + '</td><td>' + r.masked_ip
-    + '</td><td>' + new Date(r.created_at).toLocaleString('pt-BR') + '</td></tr>').join('');
+  tb.innerHTML = items.map(r => '<tr><td>' + esc(r.id) + '</td><td>' + esc(r.status) + '</td><td>' + esc(r.masked_ip)
+    + '</td><td>' + esc(new Date(r.created_at).toLocaleString('pt-BR')) + '</td></tr>').join('');
 }
 document.getElementById('load').addEventListener('click', load);
 </script>

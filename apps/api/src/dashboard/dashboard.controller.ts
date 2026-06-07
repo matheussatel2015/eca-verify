@@ -13,6 +13,7 @@ export class DashboardController {
   // Public HTML shell; the data endpoints below require the API key.
   @Get()
   @Header('Content-Type', 'text/html; charset=utf-8')
+  @Header('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'")
   page(): string {
     return DASHBOARD_HTML;
   }
