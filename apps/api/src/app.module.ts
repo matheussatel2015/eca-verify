@@ -17,6 +17,7 @@ import { BillingModule } from './billing/billing.module';
 import { HealthModule } from './health/health.module';
 import { ProofModule } from './proof/proof.module';
 import { ConsentModule } from './consent/consent.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ConsentModule } from './consent/consent.module';
     HealthModule,
     ProofModule,
     ConsentModule,
+    AuthModule,
   ],
 })
 export class AppModule {}
