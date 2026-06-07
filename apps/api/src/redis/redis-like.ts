@@ -5,4 +5,5 @@ export interface RedisLike {
   pttl(key: string): Promise<number>;
   /** SET key value PX ms NX — returns true if the key was set (did not exist). */
   setNx(key: string, value: string, ttlMs: number): Promise<boolean>;
+  get(key: string): Promise<string | null>;
 }

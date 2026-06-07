@@ -7,6 +7,7 @@ class FakeRedis implements RedisLike {
   async pexpire() {}
   async pttl() { return 0; }
   async setNx(key: string) { if (this.keys.has(key)) return false; this.keys.add(key); return true; }
+  async get() { return null; }
 }
 
 test('acquire succeeds the first time and fails the second', async () => {
