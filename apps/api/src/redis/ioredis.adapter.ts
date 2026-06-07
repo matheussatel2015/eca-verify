@@ -17,4 +17,7 @@ export class IoRedisAdapter implements RedisLike {
     const res = await this.client.set(key, value, 'PX', ttlMs, 'NX');
     return res === 'OK';
   }
+  get(key: string): Promise<string | null> {
+    return this.client.get(key);
+  }
 }

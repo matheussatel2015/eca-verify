@@ -7,6 +7,7 @@ class FakeRedis implements RedisLike {
   async pexpire() {}
   async pttl() { return 60000; }
   async setNx() { return true; }
+  async get() { return null; }
 }
 
 test('allows requests up to the limit', async () => {
