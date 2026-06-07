@@ -12,3 +12,7 @@ test('looksLikeJwt false for empty/garbage', () => {
   expect(looksLikeJwt('')).toBe(false);
   expect(looksLikeJwt('aaa.bbb')).toBe(false);
 });
+
+test('looksLikeJwt false for a non-base64url char', () => {
+  expect(looksLikeJwt('aaa!bbb.ccc.ddd')).toBe(false);
+});

@@ -6,10 +6,12 @@ import { ApiKeyService } from '../tenant/api-key.service';
 import { Tenant } from '../tenant/tenant.entity';
 import { DashboardAuthService, DashboardClaims } from './dashboard-auth.service';
 
-/** A JWT has exactly three non-empty dot-separated parts; API keys (sk_...) do not. */
+const BASE64URL = /^[A-Za-z0-9_-]+$/;
+
+/** A JWT has exactly three non-empty base64url dot-separated parts; API keys (sk_...) do not. */
 export function looksLikeJwt(token: string): boolean {
   const parts = token.split('.');
-  return parts.length === 3 && parts.every((p) => p.length > 0);
+  return parts.length === 3 && parts.every((p) => BASE64URL.test(p));
 }
 
 @Injectable()
