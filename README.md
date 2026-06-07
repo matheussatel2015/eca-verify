@@ -126,7 +126,8 @@ Webhook de retorno (assinado `X-Signature: HMAC-SHA256`):
 - [x] **#1 Core multi-tenant** — registro self-service, rotação/revogação de API Keys, segredos cifrados
 - [x] **#2 Motor de IA real (CAF)** — adapter CAF (idade/liveness) + etapa de documento (OCR + facematch) atrás dos ports, seleção `mock|caf`. *Chamadas reais ao CAF pendentes de credenciais de sandbox.*
 - [x] **#3 Dashboard + auditoria** — painel estático (volume, aprovações/reprovações, log de auditoria) servido pela API, dados RLS-scoped por API Key
-- [x] **#4 Billing** — planos (free/pro/scale), quota mensal metered em Redis + bloqueio `402`, fatura computada (sem gateway de pagamento ainda)
+- [x] **#4 Billing** — planos (free/pro/scale), quota mensal metered em Redis + bloqueio `402`, fatura computada
+- [x] **#4b Pagamento (Stripe)** — assinatura via Stripe Checkout hospedado + sincronização de plano por webhook assinado. Adapter `mock|stripe` (default `mock`); opt-in real Stripe via `PAYMENT_PROVIDER_KIND=stripe` + `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET`/`STRIPE_PRICE_PRO`/`STRIPE_PRICE_SCALE`. Endpoints `POST /billing/checkout` (cria a sessão de Checkout, requer API Key) e `POST /billing/stripe/webhook` (público, raw-body, assinatura verificada → atualiza `plan_id` e guarda `stripe_customer_id`/`stripe_subscription_id`). Chamadas reais ao Stripe pendentes de credenciais de sandbox.
 
 ## Documentação
 Specs e planos de implementação em `docs/superpowers/`.

@@ -14,7 +14,7 @@ async function bootstrap() {
     console.error(`[startup] ${(e as Error).message}`);
     process.exit(1);
   }
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   app.use(helmet());
   app.useGlobalFilters(new AllExceptionsFilter());
   app.enableShutdownHooks();

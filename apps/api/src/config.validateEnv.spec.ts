@@ -59,3 +59,18 @@ test('accepts caf kind when all credentials are present', () => {
   });
   expect(() => validateEnv(env)).not.toThrow();
 });
+
+test('throws when stripe payment provider is selected without keys', () => {
+  expect(() => validateEnv(validEnv({ PAYMENT_PROVIDER_KIND: 'stripe' }))).toThrow(/STRIPE_/);
+});
+
+test('accepts stripe payment provider when all keys are present', () => {
+  const env = validEnv({
+    PAYMENT_PROVIDER_KIND: 'stripe',
+    STRIPE_SECRET_KEY: 'sk_test_x',
+    STRIPE_WEBHOOK_SECRET: 'whsec_x',
+    STRIPE_PRICE_PRO: 'price_pro',
+    STRIPE_PRICE_SCALE: 'price_scale',
+  });
+  expect(() => validateEnv(env)).not.toThrow();
+});

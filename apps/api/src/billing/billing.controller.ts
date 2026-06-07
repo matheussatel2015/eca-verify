@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Put, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, HttpCode, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { ApiKeyGuard } from '../tenant/api-key.guard';
 import { BillingService } from './billing.service';
 import { PLANS } from './plans';
@@ -35,5 +35,24 @@ export class BillingController {
   @UseGuards(ApiKeyGuard)
   async invoice(@Req() req: any) {
     return this.billing.getCurrentInvoice(req.tenant.id);
+  }
+
+  // Start a hosted Stripe Checkout for a paid plan.
+  @Post('checkout')
+  @UseGuards(ApiKeyGuard)
+  async checkout(@Req() req: any, @Body() body: { plan_id?: unknown }) {
+    if (typeof body.plan_id !== 'string' || !body.plan_id) throw new BadRequestException('plan_id is required');
+    return this.billing.startCheckout(req.tenant.id, body.plan_id);
+  }
+
+  // Stripe webhook: public, raw-body + signature-verified inside the provider.
+  @Post('stripe/webhook')
+  @HttpCode(202)
+  async stripeWebhook(@Req() req: any) {
+    const signature = req.headers['stripe-signature'] ?? '';
+    const raw: Buffer | undefined = req.rawBody;
+    if (!raw) throw new BadRequestException('rawBody unavailable (NestFactory rawBody:true required)');
+    const change = await this.billing.resolveAndApplyWebhook(raw, signature);
+    return { received: true, applied: !!change };
   }
 }
