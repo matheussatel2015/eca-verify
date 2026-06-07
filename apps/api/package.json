@@ -11,6 +11,7 @@
     "@nestjs/platform-express": "^10.4.0",
     "@nestjs/typeorm": "^10.0.2",
     "helmet": "^7.1.0",
+    "jose": "^5.9.6",
     "pg": "^8.12.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",

@@ -44,6 +44,18 @@ export function loadProviderConfig(env: NodeJS.ProcessEnv): ProviderConfig {
   return cfg;
 }
 
+export function loadProofPrivateKeyPem(env: NodeJS.ProcessEnv): string | undefined {
+  return env.PROOF_PRIVATE_KEY && env.PROOF_PRIVATE_KEY.trim() ? env.PROOF_PRIVATE_KEY : undefined;
+}
+
+export function proofIssuer(env: NodeJS.ProcessEnv): string {
+  return env.PROOF_ISSUER ?? 'eca-verify';
+}
+
+export function modelVersion(env: NodeJS.ProcessEnv): string {
+  return env.MODEL_VERSION ?? 'mock-1';
+}
+
 export function encryptionKey(env: NodeJS.ProcessEnv): Buffer {
   const hex = env.APP_ENCRYPTION_KEY ?? '';
   if (hex.length !== 64) throw new Error('APP_ENCRYPTION_KEY must be 32 bytes (64 hex chars)');
