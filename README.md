@@ -58,7 +58,7 @@ Pré-requisitos: Docker (e Node 22 para o modo dev).
 docker compose up -d --build
 ```
 Sobe Postgres + Redis + MinIO + **API** + **worker**, roda as migrações (serviço `migrate`) e cria o bucket. Depois:
-- Dashboard: http://localhost:3000/dashboard (cole uma API key — gere via `POST /tenants/register`)
+- Dashboard: http://localhost:3000/dashboard — humanos fazem login com **email/senha** (usuário provisionado via `POST /auth/users` autenticado pela API key); acesso programático continua usando a API key (cole no campo "API Key" ou envie `Authorization: Bearer sk_...`).
 - Health: http://localhost:3000/health · JWKS: http://localhost:3000/.well-known/jwks.json
 - MinIO: http://localhost:9001 (`minioadmin`/`minioadmin`)
 
