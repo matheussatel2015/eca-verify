@@ -7,16 +7,17 @@ import { AgeBand } from '@eca/sdk-types';
  * Centralizados aqui para troca trivial.
  */
 export const AGE_BAND_THRESHOLDS = {
-  crianca: 12, // idade < 12 → crianca
-  adolescenteJovem: 16, // 12..15 → adolescente_jovem
-  adulto: 18, // 16..17 → adolescente ; >= 18 → adulto
+  // Cada limiar é um LIMITE SUPERIOR EXCLUSIVO da faixa imediatamente abaixo.
+  crianca: 12, // idade < 12        → crianca
+  adolescenteJovemMax: 16, // 12..15 (idade < 16) → adolescente_jovem ; 16 NÃO é adolescente_jovem
+  adulto: 18, // 16..17 (idade < 18) → adolescente ; idade >= 18 → adulto
 } as const;
 
 /** Mapa puro idade → faixa. Retorna null quando a idade é desconhecida. */
 export function classifyAgeBand(age: number | null | undefined): AgeBand | null {
   if (age === null || age === undefined || !Number.isFinite(age)) return null;
   if (age < AGE_BAND_THRESHOLDS.crianca) return 'crianca';
-  if (age < AGE_BAND_THRESHOLDS.adolescenteJovem) return 'adolescente_jovem';
+  if (age < AGE_BAND_THRESHOLDS.adolescenteJovemMax) return 'adolescente_jovem';
   if (age < AGE_BAND_THRESHOLDS.adulto) return 'adolescente';
   return 'adulto';
 }

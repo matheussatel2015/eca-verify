@@ -15,6 +15,10 @@ test('classifies 16-17 as adolescente', () => {
   expect(classifyAgeBand(17)).toBe('adolescente');
 });
 
+test('boundary: 16 is the exclusive upper bound of adolescente_jovem (NOT adolescente_jovem)', () => {
+  expect(classifyAgeBand(16)).toBe('adolescente');
+});
+
 test('classifies 18+ as adulto', () => {
   expect(classifyAgeBand(18)).toBe('adulto');
   expect(classifyAgeBand(40)).toBe('adulto');
@@ -25,5 +29,5 @@ test('returns null for unknown age', () => {
 });
 
 test('thresholds are named constants (confirmar com jurídico)', () => {
-  expect(AGE_BAND_THRESHOLDS).toEqual({ crianca: 12, adolescenteJovem: 16, adulto: 18 });
+  expect(AGE_BAND_THRESHOLDS).toEqual({ crianca: 12, adolescenteJovemMax: 16, adulto: 18 });
 });
