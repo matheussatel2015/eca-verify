@@ -1,6 +1,7 @@
 import { VerificationService } from './verification.service';
 import { MockAgeProvider } from './mock-age-provider';
 import { encryptFrame } from './crypto.util';
+import { VerificationRecordService } from './verification-record.service';
 import { DecisionConfig } from '@eca/sdk-types';
 
 const key = Buffer.alloc(32, 7);
@@ -10,7 +11,7 @@ function makeService(age: number, liveness: number) {
   const audit = { record: jest.fn(async () => {}) };
   const webhook = { dispatch: jest.fn(async () => {}) };
   const provider = new MockAgeProvider({ estimatedAge: age, livenessScore: liveness });
-  const svc = new VerificationService(provider, audit as any, webhook as any, cfg, key);
+  const svc = new VerificationService(provider, audit as any, webhook as any, cfg, key, new VerificationRecordService(), null);
   return { svc, audit, webhook };
 }
 
