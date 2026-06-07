@@ -7,6 +7,7 @@ test('saveWith persists the consent record on the provided RLS-scoped manager', 
   const svc = new ConsentService(dataSource);
   await svc.saveWith(manager as any, { id: 'c1', tenantId: 'ten1', userHash: 'uh', policyVersion: 'v1', scope: 'age_verification', maskedIp: '1.2.3.0', createdAt: new Date() } as any);
   expect(saved[0].id).toBe('c1');
+  expect(saved[0].tenantId).toBe('ten1'); // record carries the scoped tenant (RLS WITH CHECK contract)
   expect(manager.save).toHaveBeenCalledTimes(1);
 });
 
