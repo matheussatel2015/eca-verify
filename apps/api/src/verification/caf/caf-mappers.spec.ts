@@ -1,4 +1,4 @@
-import { extractAgeLiveness, isTransactionComplete } from './caf-mappers';
+import { extractAgeLiveness, isTransactionComplete, extractDocument } from './caf-mappers';
 
 const tx = {
   status: 'COMPLETED',
@@ -21,4 +21,12 @@ test('throws if a required service is missing', () => {
 test('isTransactionComplete is true only when all services are COMPLETED', () => {
   expect(isTransactionComplete(tx)).toBe(true);
   expect(isTransactionComplete({ status: 'PENDING', services: [{ name: 'x', status: 'PENDING', data: {} }] })).toBe(false);
+});
+
+test('extracts document birthDate + facematch from a transaction', () => {
+  const tx = { status: 'COMPLETED', services: [
+    { name: 'ocr', status: 'COMPLETED', data: { ocr: { birthDate: '1999-03-02', name: 'Maria' } } },
+    { name: 'facematch', status: 'COMPLETED', data: { confidence: 92, identical: true } },
+  ]};
+  expect(extractDocument(tx, 100)).toEqual({ birthDate: '1999-03-02', faceMatchScore: 0.92, identical: true });
 });

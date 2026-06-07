@@ -1,4 +1,5 @@
 import { AgeProviderResult } from '@eca/sdk-types';
+import { DocumentVerifyOutput } from '../document/document-verifier.port';
 
 export interface CafService { name: string; status: string; data: any; }
 export interface CafTransaction { status: string; services: CafService[]; }
@@ -21,5 +22,15 @@ export function extractAgeLiveness(tx: CafTransaction, scoreScale: number): AgeP
     livenessScore: Number(liveness.data?.info?.probability ?? 0) / scoreScale,
     // ageRangeLow is the conservative bound: harder to clear the cutoff, never over-approves.
     estimatedAge: Number(face.data?.ageRangeLow ?? 0),
+  };
+}
+
+export function extractDocument(tx: CafTransaction, scoreScale: number): DocumentVerifyOutput {
+  const ocr = service(tx, 'ocr');
+  const facematch = service(tx, 'facematch');
+  return {
+    birthDate: ocr.data?.ocr?.birthDate ?? null,
+    faceMatchScore: Number(facematch.data?.confidence ?? 0) / scoreScale,
+    identical: Boolean(facematch.data?.identical),
   };
 }
