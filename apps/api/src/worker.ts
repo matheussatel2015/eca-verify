@@ -11,6 +11,7 @@ import { DocumentProcessor } from './verification/document/document.processor';
 import { AuditService } from './audit/audit.service';
 import { WebhookService } from './webhook/webhook.service';
 import { buildAgeProvider, buildDocumentVerifier } from './verification/provider-factory';
+import { CafClient } from './verification/caf/caf-client';
 import { loadDecisionConfig, encryptionKey, loadProviderConfig } from './config';
 import { VERIFICATION_QUEUE_NAME, VerificationJob } from './queue/verification-job';
 import { DOCUMENT_QUEUE_NAME, DocumentJob } from './queue/document-job';
@@ -24,8 +25,10 @@ async function main() {
   const audit = new AuditService(auditRepo);
   const webhook = new WebhookService();
   const key = encryptionKey(process.env);
+  const providerCfg = loadProviderConfig(process.env);
+  const cafClient = providerCfg.caf ? new CafClient(providerCfg.caf) : undefined;
   const service = new VerificationService(
-    buildAgeProvider(loadProviderConfig(process.env)),
+    buildAgeProvider(providerCfg, cafClient),
     audit,
     webhook,
     loadDecisionConfig(process.env),
@@ -40,7 +43,7 @@ async function main() {
   const documentProcessor = new DocumentProcessor(
     store,
     AppDataSource,
-    buildDocumentVerifier(loadProviderConfig(process.env)),
+    buildDocumentVerifier(providerCfg, cafClient),
     audit,
     webhook,
     once,
