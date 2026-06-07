@@ -12,6 +12,7 @@ function fakeDataSource() {
       id: 'ten1',
       webhookUrl: 'http://hook',
       webhookSecret: encryptSecret('s', Buffer.alloc(32, 9)),
+      requiredAge: 18,
     })),
     save: jest.fn(async (_e: any, row: any) => row),
   };
@@ -43,6 +44,26 @@ test('fetches the frame, scopes RLS, verifies, then deletes the frame', async ()
   expect(service.verify).toHaveBeenCalledTimes(1);
   expect(ds.qr.release).toHaveBeenCalledTimes(1);
   expect(await store.get('tx1')).toBeNull();
+});
+
+test('forwards the per-tenant cutoff (requiredAge) to service.verify as effectiveCutoffAge', async () => {
+  const store = new MemoryFrameStore(() => 1000);
+  const enc = encryptFrame(Buffer.from('frame'), key);
+  await store.put('txc', serializeFrame(enc), 300);
+  const service = { verify: jest.fn(async () => ({ transaction_id: 'txc', status: 'aprovado', is_over_18: true })) };
+  const ds = fakeDataSource();
+  ds.manager.findOneOrFail = jest.fn(async () => ({
+    id: 'ten1',
+    webhookUrl: 'http://hook',
+    webhookSecret: encryptSecret('s', Buffer.alloc(32, 9)),
+    requiredAge: 16,
+  }));
+  const once = freshOnce();
+
+  const proc = new VerificationProcessor(store, ds as any, service as any, once as any, Buffer.alloc(32, 9));
+  await proc.process({ transactionId: 'txc', tenantId: 'ten1', frameRef: 'txc', rawIp: '1.2.3.4' });
+
+  expect(service.verify).toHaveBeenCalledWith(expect.objectContaining({ effectiveCutoffAge: 16 }));
 });
 
 test('deletes the frame even when verification throws', async () => {
