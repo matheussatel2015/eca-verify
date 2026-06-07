@@ -34,15 +34,15 @@ export class VerificationController {
       throw new BadRequestException('frame.iv, frame.tag and frame.ciphertext are required (base64)');
     }
     // /verify is authenticated by the ephemeral, single-use session_token: the plugin runs in the END-USER browser and must not hold the tenant API key.
-    // Atomically consume the single-use token (DELETE ... RETURNING) so concurrent replays cannot both pass.
-    const consumed = await this.sessions
-      .createQueryBuilder()
-      .delete()
-      .from(VerificationSession)
-      .where('session_token = :t', { t: body.session_token })
-      .returning('*')
-      .execute();
-    const row = consumed.raw?.[0] as { tenant_id: string; created_at: string | Date } | undefined;
+    // The runtime connects as a NON-superuser role (eca_app) under enforced RLS, but the
+    // tenant is unknown until the row is read — so the consume is inherently cross-tenant.
+    // consume_session() is a SECURITY DEFINER fn (owned by eca) that atomically deletes the
+    // single-use token row and returns it, so concurrent replays cannot both pass.
+    const consumedRows = (await this.sessions.manager.query(
+      `SELECT tenant_id, created_at FROM consume_session($1)`,
+      [body.session_token],
+    )) as Array<{ tenant_id: string; created_at: string | Date }>;
+    const row = consumedRows?.[0];
     if (!row) throw new BadRequestException('invalid session_token');
     const createdAt = new Date(row.created_at);
     const SESSION_TTL_MS = Number(process.env.SESSION_TTL_SECONDS ?? 900) * 1000;

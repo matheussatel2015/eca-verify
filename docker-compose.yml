@@ -114,6 +114,9 @@ services:
         condition: service_completed_successfully
     environment:
       <<: *app-env
+      # Runtime connects as the NON-superuser role so RLS is enforced.
+      # migrate (above) ran as `eca` and created this role + grants.
+      DATABASE_URL: postgres://eca_app:eca_app@postgres:5432/eca_verify
     env_file:
       - path: .env.docker
         required: false
@@ -138,6 +141,8 @@ services:
         condition: service_completed_successfully
     environment:
       <<: *app-env
+      # Runtime connects as the NON-superuser role so RLS is enforced.
+      DATABASE_URL: postgres://eca_app:eca_app@postgres:5432/eca_verify
     env_file:
       - path: .env.docker
         required: false
