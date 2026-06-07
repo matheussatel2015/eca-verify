@@ -17,5 +17,6 @@ export class VerificationRecord {
   @Column({ name: 'model_version' }) modelVersion!: string;
   @Column({ name: 'decision_reason' }) decisionReason!: string;
   @Column({ name: 'proof_jwt', type: 'text', nullable: true }) proofJwt!: string | null;
+  @Column({ name: 'age_band', type: 'text', nullable: true }) ageBand!: string | null;
   @Column({ name: 'created_at', type: 'timestamptz' }) createdAt!: Date;
 }

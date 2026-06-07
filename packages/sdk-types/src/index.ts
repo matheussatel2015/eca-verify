@@ -26,6 +26,7 @@ export interface WebhookPayload {
   is_over_18: boolean;
   document_session_token?: string;
   proof?: string; // signed ES256 JWT verification receipt
+  age_band?: AgeBand; // faixa etária derivada (opcional)
 }
 
 // Fields that must NEVER appear in a session-open payload (PII guard).

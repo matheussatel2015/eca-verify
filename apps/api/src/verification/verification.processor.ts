@@ -41,6 +41,7 @@ export class VerificationProcessor {
           encryptedFrame,
           auditManager: mgr,
           recordManager: mgr,
+          effectiveCutoffAge: tenant.requiredAge,
           provider: process.env.AGE_PROVIDER_KIND ?? 'mock',
           modelVersion: process.env.MODEL_VERSION ?? 'mock-1',
           issueDocumentSession: async () => {

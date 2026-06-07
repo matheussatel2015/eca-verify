@@ -6,6 +6,7 @@ import { WebhookService } from '../webhook/webhook.service';
 import { decideVerification, isOver18 } from './decision';
 import { decryptFrame, zero, EncryptedFrame } from './crypto.util';
 import { buildAgeRecord } from './record-builder';
+import { classifyAgeBand } from './age-band';
 import { VerificationRecordService } from './verification-record.service';
 import { ProofService } from '../proof/proof.service';
 
@@ -21,6 +22,7 @@ interface VerifyArgs {
   provider?: string;        // 'mock' | 'caf' — for the audit record
   modelVersion?: string;    // for the audit record
   recordManager?: import('typeorm').EntityManager; // RLS-scoped manager to persist the record
+  effectiveCutoffAge?: number; // per-tenant override of cfg.cutoffAge
 }
 
 @Injectable()
@@ -39,12 +41,16 @@ export class VerificationService {
     let frame: Buffer = Buffer.alloc(0);
     try {
       frame = decryptFrame(args.encryptedFrame, this.key);
+      const effectiveCfg: DecisionConfig = args.effectiveCutoffAge
+        ? { ...this.cfg, cutoffAge: args.effectiveCutoffAge }
+        : this.cfg;
       const providerResult = await this.provider.analyze(frame);
-      const status = decideVerification(providerResult, this.cfg);
+      const status = decideVerification(providerResult, effectiveCfg);
       const payload: WebhookPayload = {
         transaction_id: args.transactionId,
         status,
         is_over_18: isOver18(status),
+        age_band: classifyAgeBand(providerResult.estimatedAge) ?? undefined,
       };
       if (status === 'documento_requerido' && args.issueDocumentSession) {
         payload.document_session_token = await args.issueDocumentSession();
@@ -62,7 +68,7 @@ export class VerificationService {
       if (args.recordManager) {
         const record = buildAgeRecord({
           transactionId: args.transactionId, tenantId: args.tenantId,
-          result: providerResult, cfg: this.cfg, status,
+          result: providerResult, cfg: effectiveCfg, status,
           provider: args.provider ?? 'mock', modelVersion: args.modelVersion ?? 'unknown', now: new Date(),
         }) as any;
         record.proofJwt = signedJwt ?? null;

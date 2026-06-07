@@ -1,5 +1,6 @@
 import { AgeProviderResult, DecisionConfig, VerificationStatus } from '@eca/sdk-types';
 import { isOver18 } from './decision';
+import { classifyAgeBand } from './age-band';
 
 export function explainAgeDecision(result: AgeProviderResult, cfg: DecisionConfig, status: VerificationStatus): string {
   if (status === 'reprovado' && result.livenessScore < cfg.livenessThreshold) {
@@ -40,6 +41,7 @@ export function buildAgeRecord(input: AgeRecordInput) {
     provider: input.provider,
     modelVersion: input.modelVersion,
     decisionReason: explainAgeDecision(input.result, input.cfg, input.status),
+    ageBand: classifyAgeBand(input.result.estimatedAge),
     createdAt: input.now,
   };
 }
