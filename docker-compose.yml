@@ -115,7 +115,8 @@ services:
     environment:
       <<: *app-env
     env_file:
-      - .env.docker
+      - path: .env.docker
+        required: false
     ports:
       - "3000:3000"
     command: >
@@ -138,7 +139,8 @@ services:
     environment:
       <<: *app-env
     env_file:
-      - .env.docker
+      - path: .env.docker
+        required: false
     command: >
       /bin/sh -c "
       if [ -n \"$$PROOF_PRIVATE_KEY_B64\" ]; then export PROOF_PRIVATE_KEY=$$(echo \"$$PROOF_PRIVATE_KEY_B64\" | base64 -d); fi;
