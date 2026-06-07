@@ -58,6 +58,9 @@ async function main() {
     once,
     key,
     loadDecisionConfig(process.env),
+    24 * 60 * 60 * 1000,
+    records,
+    proof,
   );
 
   const connection = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', { maxRetriesPerRequest: null });
