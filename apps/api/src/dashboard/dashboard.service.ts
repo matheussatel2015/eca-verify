@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
 import { shapeStats, StatsSummary } from './dashboard-stats';
 import { Pagination } from './pagination';
+import { runScoped } from '../tenant/tenant-scope';
 
 export interface AuditPage {
   items: Array<{ id: string; masked_ip: string; status: string; created_at: Date }>;
@@ -16,14 +17,7 @@ export class DashboardService {
 
   // audit_logs has FORCE RLS — reads must run on a connection with app.tenant_id set.
   private async scoped<T>(tenantId: string, fn: (mgr: EntityManager) => Promise<T>): Promise<T> {
-    const qr = this.dataSource.createQueryRunner();
-    await qr.connect();
-    try {
-      await qr.query(`SELECT set_config('app.tenant_id', $1, false)`, [tenantId]);
-      return await fn(qr.manager);
-    } finally {
-      await qr.release();
-    }
+    return runScoped(this.dataSource, tenantId, fn);
   }
 
   async getStats(tenantId: string, from: Date, to: Date): Promise<StatsSummary> {

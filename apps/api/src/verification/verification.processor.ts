@@ -8,6 +8,7 @@ import { VerificationService } from './verification.service';
 import { VerificationJob } from '../queue/verification-job';
 import { OnceGuard } from '../queue/once-guard';
 import { decryptSecret } from '../tenant/secret-crypto';
+import { runScoped } from '../tenant/tenant-scope';
 
 export class VerificationProcessor {
   constructor(
@@ -28,12 +29,9 @@ export class VerificationProcessor {
       if (!fresh) return;
       const encryptedFrame = deserializeFrame(bytes);
 
-      const qr = this.dataSource.createQueryRunner();
-      await qr.connect();
-      try {
-        // Session-level RLS scope so the audit INSERT on THIS connection satisfies the policy.
-        await qr.query(`SELECT set_config('app.tenant_id', $1, false)`, [job.tenantId]);
-        const tenant = await qr.manager.findOneOrFail(Tenant, { where: { id: job.tenantId } });
+      // Session-level RLS scope so the audit INSERT on THIS connection satisfies the policy.
+      await runScoped(this.dataSource, job.tenantId, async (mgr) => {
+        const tenant = await mgr.findOneOrFail(Tenant, { where: { id: job.tenantId } });
         await this.service.verify({
           transactionId: job.transactionId,
           tenantId: job.tenantId,
@@ -41,10 +39,10 @@ export class VerificationProcessor {
           webhookUrl: tenant.webhookUrl,
           webhookSecret: decryptSecret(tenant.webhookSecret, this.key),
           encryptedFrame,
-          auditManager: qr.manager,
+          auditManager: mgr,
           issueDocumentSession: async () => {
             const token = randomBytes(24).toString('hex');
-            await qr.manager.save(DocumentSession, {
+            await mgr.save(DocumentSession, {
               id: randomUUID(),
               tenantId: job.tenantId,
               transactionId: job.transactionId,
@@ -54,9 +52,7 @@ export class VerificationProcessor {
             return token;
           },
         });
-      } finally {
-        await qr.release();
-      }
+      });
     } finally {
       // Physical deletion of the temporary media — always, even if the frame was missing/expired.
       await this.store.delete(job.frameRef);
