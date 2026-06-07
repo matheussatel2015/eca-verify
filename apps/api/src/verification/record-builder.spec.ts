@@ -1,4 +1,5 @@
 import { explainAgeDecision, buildAgeRecord } from './record-builder';
+import { classifyAgeBand } from './age-band';
 import { DecisionConfig } from '@eca/sdk-types';
 
 const cfg: DecisionConfig = { cutoffAge: 18, margin: 3, livenessThreshold: 0.8 };
@@ -35,4 +36,14 @@ test('buildAgeRecord assembles persistable metadata without biometrics', () => {
   });
   expect(typeof rec.decisionReason).toBe('string');
   expect(Object.keys(rec)).not.toContain('frame');
+});
+
+test('buildAgeRecord includes the derived age band', () => {
+  const rec = buildAgeRecord({
+    transactionId: 'tx1', tenantId: 'ten1',
+    result: { estimatedAge: 14, livenessScore: 0.9 }, cfg, status: 'documento_requerido',
+    provider: 'mock', modelVersion: 'mock-1', now: new Date('2026-06-07T00:00:00Z'),
+  });
+  expect(rec.ageBand).toBe('adolescente_jovem');
+  expect(classifyAgeBand(14)).toBe('adolescente_jovem');
 });

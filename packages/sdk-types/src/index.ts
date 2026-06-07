@@ -16,12 +16,17 @@ export interface DecisionConfig {
   livenessThreshold: number;
 }
 
+// Faixas etárias (defaults sensatos alinhados ao ECA — CONFIRMAR COM JURÍDICO).
+export const AGE_BANDS = ['crianca', 'adolescente_jovem', 'adolescente', 'adulto'] as const;
+export type AgeBand = typeof AGE_BANDS[number];
+
 export interface WebhookPayload {
   transaction_id: string;
   status: VerificationStatus;
   is_over_18: boolean;
   document_session_token?: string;
   proof?: string; // signed ES256 JWT verification receipt
+  age_band?: AgeBand; // faixa etária derivada (opcional)
 }
 
 // Fields that must NEVER appear in a session-open payload (PII guard).

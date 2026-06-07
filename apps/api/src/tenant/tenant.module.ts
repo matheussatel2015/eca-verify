@@ -5,6 +5,7 @@ import { ApiKey } from './api-key.entity';
 import { ApiKeyGuard } from './api-key.guard';
 import { ApiKeyService } from './api-key.service';
 import { TenantService, SECRET_KEY } from './tenant.service';
+import { TenantSettingsService } from './tenant-settings.service';
 import { TenantController } from './tenant.controller';
 import { encryptionKey } from '../config';
 import Redis from 'ioredis';
@@ -20,6 +21,7 @@ import { IoRedisAdapter } from '../redis/ioredis.adapter';
     ApiKeyGuard,
     ApiKeyService,
     TenantService,
+    TenantSettingsService,
     {
       provide: RATE_LIMITER,
       useFactory: () => new RateLimiter(new IoRedisAdapter(new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379'))),
