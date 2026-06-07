@@ -30,6 +30,8 @@ export class TenantService {
       webhookSecret: encryptSecret(rawSecret, this.key),
       planId: 'free',
       requiredAge: 18,
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
     };
     await this.tenants.save(tenant);
     const issued = await this.apiKeys.issue(tenant.id, 'default');
