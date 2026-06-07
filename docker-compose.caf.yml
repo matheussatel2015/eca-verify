@@ -1,0 +1,49 @@
+# CAF mode override — OPT-IN. Use together with the base compose file:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.caf.yml up -d --build
+#
+# This keeps postgres/redis/minio + migrations from the base file, adds a
+# dependency-free fake-CAF stub (tools/caf-stub), and switches api+worker to the
+# REAL CAF provider code path pointed at that stub. The base docker-compose.yml
+# stays on the `mock` providers (the default) and is NOT modified.
+#
+# To talk to the REAL CAF instead of the stub: drop the caf-stub service and set
+# CAF_BASE_URL to the real host + real CAF_CLIENT_ID/CAF_CLIENT_SECRET. No code change.
+
+# Shared CAF env applied to both api and worker.
+x-caf-env: &caf-env
+  AGE_PROVIDER_KIND: caf
+  DOC_VERIFIER_KIND: caf
+  CAF_BASE_URL: http://caf-stub:8090
+  CAF_CLIENT_ID: stub
+  CAF_CLIENT_SECRET: stub
+  CAF_SCORE_SCALE: "100"
+  CAF_POLL_INTERVAL_MS: "200"
+  CAF_POLL_MAX_ATTEMPTS: "20"
+
+services:
+  caf-stub:
+    image: node:22-slim
+    working_dir: /app
+    volumes:
+      - ./tools/caf-stub:/app:ro
+    command: node server.js
+    environment:
+      PORT: "8090"
+      # STUB_AGE_LOW: "17"   # uncomment to drive the document path (grey zone)
+    ports:
+      - "8090:8090"
+
+  api:
+    environment:
+      <<: *caf-env
+    depends_on:
+      caf-stub:
+        condition: service_started
+
+  worker:
+    environment:
+      <<: *caf-env
+    depends_on:
+      caf-stub:
+        condition: service_started
