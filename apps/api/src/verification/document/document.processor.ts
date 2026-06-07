@@ -12,6 +12,7 @@ import { AuditService } from '../../audit/audit.service';
 import { WebhookService } from '../../webhook/webhook.service';
 import { OnceGuard } from '../../queue/once-guard';
 import { DocumentJob } from '../../queue/document-job';
+import { runScoped } from '../../tenant/tenant-scope';
 
 export class DocumentProcessor {
   constructor(
@@ -42,16 +43,11 @@ export class DocumentProcessor {
       const status = decideDocument({ ageFromDoc, faceMatchScore: out.faceMatchScore, identical: out.identical }, this.cfg.cutoffAge, Number(process.env.DOC_FACEMATCH_MIN ?? 0.8));
       const payload: WebhookPayload = { transaction_id: job.transactionId, status, is_over_18: isOver18(status) };
 
-      const qr = this.dataSource.createQueryRunner();
-      await qr.connect();
-      try {
-        await qr.query(`SELECT set_config('app.tenant_id', $1, false)`, [job.tenantId]);
-        const tenant = await qr.manager.findOneOrFail(Tenant, { where: { id: job.tenantId } });
-        await this.audit.record({ transactionId: job.transactionId, tenantId: job.tenantId, rawIp: job.rawIp, status, now: new Date() }, qr.manager);
+      await runScoped(this.dataSource, job.tenantId, async (mgr) => {
+        const tenant = await mgr.findOneOrFail(Tenant, { where: { id: job.tenantId } });
+        await this.audit.record({ transactionId: job.transactionId, tenantId: job.tenantId, rawIp: job.rawIp, status, now: new Date() }, mgr);
         await this.webhook.dispatch(tenant.webhookUrl, decryptSecret(tenant.webhookSecret, this.key), payload);
-      } finally {
-        await qr.release();
-      }
+      });
     } finally {
       zero(docFrame);
       zero(selfieFrame);
