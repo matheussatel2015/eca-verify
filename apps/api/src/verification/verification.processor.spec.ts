@@ -91,6 +91,7 @@ test('on documento_requerido it persists a document session and adds the token t
   await proc.process({ transactionId: 'txdr', tenantId: 'ten1', frameRef: 'txdr', rawIp: '1.2.3.4' });
   expect(docSessions).toHaveLength(1);
   expect(docSessions[0].transactionId).toBe('txdr');
+  expect(docSessions[0].sessionToken).toMatch(/^[0-9a-f]{48}$/);
 });
 
 test('skips verification when the transaction was already processed (idempotent retry)', async () => {
