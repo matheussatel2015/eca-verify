@@ -1,5 +1,7 @@
 import { DataSource } from 'typeorm';
+import { randomUUID, randomBytes } from 'crypto';
 import { Tenant } from '../tenant/tenant.entity';
+import { DocumentSession } from '../session/document-session.entity';
 import { FrameStorePort } from '../storage/frame-store.port';
 import { deserializeFrame } from '../storage/frame-codec';
 import { VerificationService } from './verification.service';
@@ -40,6 +42,17 @@ export class VerificationProcessor {
           webhookSecret: decryptSecret(tenant.webhookSecret, this.key),
           encryptedFrame,
           auditManager: qr.manager,
+          issueDocumentSession: async () => {
+            const token = randomBytes(24).toString('hex');
+            await qr.manager.save(DocumentSession, {
+              id: randomUUID(),
+              tenantId: job.tenantId,
+              transactionId: job.transactionId,
+              sessionToken: token,
+              createdAt: new Date(),
+            });
+            return token;
+          },
         });
       } finally {
         await qr.release();

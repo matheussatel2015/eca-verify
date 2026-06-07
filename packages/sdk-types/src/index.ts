@@ -20,6 +20,7 @@ export interface WebhookPayload {
   transaction_id: string;
   status: VerificationStatus;
   is_over_18: boolean;
+  document_session_token?: string;
 }
 
 // Fields that must NEVER appear in a session-open payload (PII guard).

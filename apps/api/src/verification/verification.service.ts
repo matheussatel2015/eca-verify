@@ -14,6 +14,7 @@ interface VerifyArgs {
   webhookSecret: string;
   encryptedFrame: EncryptedFrame;
   auditManager?: import('typeorm').EntityManager;
+  issueDocumentSession?: () => Promise<string>;
 }
 
 @Injectable()
@@ -37,6 +38,9 @@ export class VerificationService {
         status,
         is_over_18: isOver18(status),
       };
+      if (status === 'documento_requerido' && args.issueDocumentSession) {
+        payload.document_session_token = await args.issueDocumentSession();
+      }
       await this.audit.record({ transactionId: args.transactionId, tenantId: args.tenantId, rawIp: args.rawIp, status, now: new Date() }, args.auditManager);
       await this.webhook.dispatch(args.webhookUrl, args.webhookSecret, payload);
       return payload;
