@@ -6,6 +6,8 @@ import { VerificationSession } from './session/session.entity';
 import { DocumentSession } from './session/document-session.entity';
 import { AuditLog } from './audit/audit-log.entity';
 import { VerificationRecord } from './verification/verification-record.entity';
+import { ConsentRecord } from './consent/consent-record.entity';
+import { DiscardEvent } from './erasure/discard-event.entity';
 import { SessionModule } from './session/session.module';
 import { VerificationModule } from './verification/verification.module';
 import { TenantModule } from './tenant/tenant.module';
@@ -19,7 +21,7 @@ import { ProofModule } from './proof/proof.module';
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: process.env.DATABASE_URL,
-      entities: [Tenant, ApiKey, VerificationSession, DocumentSession, AuditLog, VerificationRecord],
+      entities: [Tenant, ApiKey, VerificationSession, DocumentSession, AuditLog, VerificationRecord, ConsentRecord, DiscardEvent],
       synchronize: false,
     }),
     SessionModule,
