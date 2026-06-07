@@ -47,7 +47,9 @@ export class CafClient {
   }
 
   async awaitTransaction(id: string): Promise<CafTransaction> {
+    const deadline = this.nowMs() + this.cfg.timeoutMs;
     for (let attempt = 0; attempt < this.cfg.pollMaxAttempts; attempt++) {
+      if (this.nowMs() >= deadline) break;
       const tx = await this.getTransaction(id);
       if (isTransactionComplete(tx)) return tx;
       if (this.cfg.pollIntervalMs > 0) await new Promise((r) => setTimeout(r, this.cfg.pollIntervalMs));
