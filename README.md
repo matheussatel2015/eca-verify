@@ -100,7 +100,8 @@ Webhook de retorno (assinado `X-Signature: HMAC-SHA256`):
 - [x] **#2.5 Escala & Hardening** — fila + workers, bucket TTL, rate limiting, async `202`
 - [x] **#1 Core multi-tenant** — registro self-service, rotação/revogação de API Keys, segredos cifrados
 - [x] **#2 Motor de IA real (CAF)** — adapter CAF (idade/liveness) + etapa de documento (OCR + facematch) atrás dos ports, seleção `mock|caf`. *Chamadas reais ao CAF pendentes de credenciais de sandbox.*
-- [ ] **#3 Dashboard + auditoria** · **#4 Billing**
+- [x] **#3 Dashboard + auditoria** — painel estático (volume, aprovações/reprovações, log de auditoria) servido pela API, dados RLS-scoped por API Key
+- [ ] **#4 Billing**
 
 ## Documentação
 Specs e planos de implementação em `docs/superpowers/`.
