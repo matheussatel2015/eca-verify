@@ -1,6 +1,7 @@
-import { buildAgeProvider } from './provider-factory';
+import { buildAgeProvider, buildDocumentVerifier } from './provider-factory';
 import { MockAgeProvider } from './mock-age-provider';
 import { CafAgeProvider } from './caf/caf-age-provider';
+import { MockDocumentVerifier } from './document/mock-document-verifier';
 
 test('returns the mock provider when ageKind is mock', () => {
   const p = buildAgeProvider({ ageKind: 'mock', docKind: 'mock' });
@@ -17,4 +18,8 @@ test('returns the CAF provider when ageKind is caf', () => {
 
 test('throws if caf is selected without config', () => {
   expect(() => buildAgeProvider({ ageKind: 'caf', docKind: 'mock' })).toThrow(/caf config/i);
+});
+
+test('returns the mock document verifier by default', () => {
+  expect(buildDocumentVerifier({ ageKind: 'mock', docKind: 'mock' })).toBeInstanceOf(MockDocumentVerifier);
 });
