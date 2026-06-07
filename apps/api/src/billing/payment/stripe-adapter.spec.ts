@@ -18,6 +18,7 @@ test('createCheckout creates a subscription session with client_reference_id + m
   expect(args.mode).toBe('subscription');
   expect(args.client_reference_id).toBe('ten1');
   expect(args.metadata).toEqual({ tenantId: 'ten1', planId: 'pro' });
+  expect(args.subscription_data.metadata.tenantId).toBe('ten1');
   expect(args.line_items[0].price).toBe('price_pro');
 });
 

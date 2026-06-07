@@ -21,6 +21,7 @@ export class StripeAdapter implements PaymentPort {
       cancel_url: this.cfg.cancelUrl,
       client_reference_id: input.tenantId,
       metadata: { tenantId: input.tenantId, planId: input.planId },
+      subscription_data: { metadata: { tenantId: input.tenantId } },
     });
     return { url: session.url ?? '' };
   }
@@ -38,7 +39,12 @@ export class StripeAdapter implements PaymentPort {
     }
     if (event.type === 'customer.subscription.deleted') {
       const sub = event.data.object as Stripe.Subscription;
-      return { tenantId: (sub.metadata?.tenantId as string) ?? '', planId: 'free', stripeSubscriptionId: sub.id };
+      return {
+        tenantId: (sub.metadata?.tenantId as string) ?? '',
+        planId: 'free',
+        stripeCustomerId: (sub.customer as string) ?? undefined,
+        stripeSubscriptionId: sub.id,
+      };
     }
     return null;
   }
