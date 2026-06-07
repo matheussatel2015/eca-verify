@@ -6,6 +6,7 @@ interface PluginOptions {
   apiBase: string;
   encryptionKeyHex: string; // ephemeral session key issued by tenant backend
   privacyPolicyUrl: string;
+  policyVersion: string; // version of the privacy policy shown to the user
 }
 
 export async function mountEcaVerify(container: HTMLElement, opts: PluginOptions): Promise<void> {
