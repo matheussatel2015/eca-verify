@@ -31,3 +31,15 @@ test('verifies a document, decides aprovado, dispatches webhook, deletes both im
   expect(await store.get('t1:doc')).toBeNull();
   expect(await store.get('t1:self')).toBeNull();
 });
+
+test('records a document discard proof after a successful run', async () => {
+  const store = new MemoryFrameStore(() => 1000);
+  await store.put('t2:doc', serializeFrame(encryptFrame(Buffer.from('doc'), key)), 300);
+  await store.put('t2:self', serializeFrame(encryptFrame(Buffer.from('self'), key)), 300);
+  const d = deps({ birthDate: '1990-01-01', faceMatchScore: 0.95, identical: true });
+  const discard = { record: jest.fn(async () => {}) };
+  const proc = new DocumentProcessor(store, d.dataSource as any, d.verifier as any, d.audit as any, d.webhook as any, d.once as any, key, { cutoffAge: 18, margin: 3, livenessThreshold: 0.8 }, 24 * 60 * 60 * 1000, new VerificationRecordService(), null, discard as any);
+  await proc.process({ transactionId: 't2', tenantId: 'ten1', documentRef: 't2:doc', selfieRef: 't2:self', rawIp: '1.2.3.4' });
+  expect(discard.record).toHaveBeenCalledTimes(1);
+  expect(discard.record).toHaveBeenCalledWith(expect.objectContaining({ transactionId: 't2', tenantId: 'ten1', what: 'document' }));
+});
