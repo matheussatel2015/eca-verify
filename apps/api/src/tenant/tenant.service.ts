@@ -28,6 +28,7 @@ export class TenantService {
       name: input.name,
       webhookUrl: input.webhookUrl,
       webhookSecret: encryptSecret(rawSecret, this.key),
+      planId: 'free',
     };
     await this.tenants.save(tenant);
     const issued = await this.apiKeys.issue(tenant.id, 'default');
