@@ -9,7 +9,10 @@ export function hashPassword(password: string): string {
 }
 
 export function verifyPassword(password: string, stored: string): boolean {
-  const [saltHex, hashHex] = (stored ?? '').split(':');
+  const colon = (stored ?? '').indexOf(':');
+  if (colon < 1) return false;
+  const saltHex = stored.slice(0, colon);
+  const hashHex = stored.slice(colon + 1);
   if (!saltHex || !hashHex) return false;
   const expected = Buffer.from(hashHex, 'hex');
   if (expected.length !== KEYLEN) return false;
