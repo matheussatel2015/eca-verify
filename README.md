@@ -99,7 +99,7 @@ Webhook de retorno (assinado `X-Signature: HMAC-SHA256`):
 - [x] **#0 MVP vertical** — fatia ponta-a-ponta (síncrona, pronta-para-fila)
 - [x] **#2.5 Escala & Hardening** — fila + workers, bucket TTL, rate limiting, async `202`
 - [x] **#1 Core multi-tenant** — registro self-service, rotação/revogação de API Keys, segredos cifrados
-- [ ] **#2 Motor de IA real** — substituir o mock pelo provedor via o adapter
+- [x] **#2 Motor de IA real (CAF)** — adapter CAF (idade/liveness) + etapa de documento (OCR + facematch) atrás dos ports, seleção `mock|caf`. *Chamadas reais ao CAF pendentes de credenciais de sandbox.*
 - [ ] **#3 Dashboard + auditoria** · **#4 Billing**
 
 ## Documentação
