@@ -5,6 +5,7 @@ import { ApiKey } from './tenant/api-key.entity';
 import { VerificationSession } from './session/session.entity';
 import { DocumentSession } from './session/document-session.entity';
 import { AuditLog } from './audit/audit-log.entity';
+import { VerificationRecord } from './verification/verification-record.entity';
 import { SessionModule } from './session/session.module';
 import { VerificationModule } from './verification/verification.module';
 import { TenantModule } from './tenant/tenant.module';
@@ -17,7 +18,7 @@ import { HealthModule } from './health/health.module';
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: process.env.DATABASE_URL,
-      entities: [Tenant, ApiKey, VerificationSession, DocumentSession, AuditLog],
+      entities: [Tenant, ApiKey, VerificationSession, DocumentSession, AuditLog, VerificationRecord],
       synchronize: false,
     }),
     SessionModule,
