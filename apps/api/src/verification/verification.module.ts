@@ -13,7 +13,9 @@ import { VerificationService } from './verification.service';
 import { AuditService } from '../audit/audit.service';
 import { WebhookService } from '../webhook/webhook.service';
 import { buildAgeProvider } from './provider-factory';
-import { loadDecisionConfig, encryptionKey, loadProviderConfig } from '../config';
+import { loadDecisionConfig, encryptionKey, loadProviderConfig, loadProofPrivateKeyPem, proofIssuer } from '../config';
+import { VerificationRecordService } from './verification-record.service';
+import { ProofService } from '../proof/proof.service';
 import { FRAME_STORE } from '../storage/frame-store.port';
 import { S3FrameStore } from '../storage/s3-frame-store';
 import { VerificationQueue } from '../queue/verification.queue';
@@ -29,18 +31,24 @@ import { IoRedisAdapter } from '../redis/ioredis.adapter';
   controllers: [VerificationController, DocumentController],
   providers: [
     AuditService,
+    VerificationRecordService,
     { provide: WebhookService, useFactory: () => new WebhookService() },
     {
       provide: VerificationService,
-      inject: [AuditService, WebhookService],
-      useFactory: (audit: AuditService, webhook: WebhookService) =>
-        new VerificationService(
+      inject: [AuditService, WebhookService, VerificationRecordService],
+      useFactory: (audit: AuditService, webhook: WebhookService, records: VerificationRecordService) => {
+        const pem = loadProofPrivateKeyPem(process.env);
+        const proof = pem ? new ProofService(pem, proofIssuer(process.env)) : null;
+        return new VerificationService(
           buildAgeProvider(loadProviderConfig(process.env)),
           audit,
           webhook,
           loadDecisionConfig(process.env),
           encryptionKey(process.env),
-        ),
+          records,
+          proof,
+        );
+      },
     },
     {
       provide: FRAME_STORE,

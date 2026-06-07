@@ -40,6 +40,9 @@ export class VerificationProcessor {
           webhookSecret: decryptSecret(tenant.webhookSecret, this.key),
           encryptedFrame,
           auditManager: mgr,
+          recordManager: mgr,
+          provider: process.env.AGE_PROVIDER_KIND ?? 'mock',
+          modelVersion: process.env.MODEL_VERSION ?? 'mock-1',
           issueDocumentSession: async () => {
             const token = randomBytes(24).toString('hex');
             await mgr.save(DocumentSession, {

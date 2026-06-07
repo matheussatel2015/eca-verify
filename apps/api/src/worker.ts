@@ -12,7 +12,9 @@ import { AuditService } from './audit/audit.service';
 import { WebhookService } from './webhook/webhook.service';
 import { buildAgeProvider, buildDocumentVerifier } from './verification/provider-factory';
 import { CafClient } from './verification/caf/caf-client';
-import { loadDecisionConfig, encryptionKey, loadProviderConfig } from './config';
+import { loadDecisionConfig, encryptionKey, loadProviderConfig, loadProofPrivateKeyPem, proofIssuer } from './config';
+import { VerificationRecordService } from './verification/verification-record.service';
+import { ProofService } from './proof/proof.service';
 import { VERIFICATION_QUEUE_NAME, VerificationJob } from './queue/verification-job';
 import { DOCUMENT_QUEUE_NAME, DocumentJob } from './queue/document-job';
 import { OnceGuard } from './queue/once-guard';
@@ -27,12 +29,18 @@ async function main() {
   const key = encryptionKey(process.env);
   const providerCfg = loadProviderConfig(process.env);
   const cafClient = providerCfg.caf ? new CafClient(providerCfg.caf) : undefined;
+  const records = new VerificationRecordService();
+  // Optional proof signer: null when PROOF_PRIVATE_KEY is unset, so the worker never throws at boot without a key.
+  const proofPem = loadProofPrivateKeyPem(process.env);
+  const proof = proofPem ? new ProofService(proofPem, proofIssuer(process.env)) : null;
   const service = new VerificationService(
     buildAgeProvider(providerCfg, cafClient),
     audit,
     webhook,
     loadDecisionConfig(process.env),
     key,
+    records,
+    proof,
   );
   const store = new S3FrameStore(
     new S3Client({ region: process.env.AWS_REGION, endpoint: process.env.AWS_ENDPOINT, forcePathStyle: true }),
