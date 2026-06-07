@@ -122,4 +122,19 @@ export function validateEnv(env: NodeJS.ProcessEnv): void {
       throw new Error(`CAF provider selected but missing credentials: ${missing.join(', ')}`);
     }
   }
+
+  const paymentKind = env.PAYMENT_PROVIDER_KIND ?? 'mock';
+  const isProduction = (env.NODE_ENV ?? process.env.NODE_ENV) === 'production';
+  if (isProduction && paymentKind === 'mock') {
+    throw new Error('PAYMENT_PROVIDER_KIND must be "stripe" in production');
+  }
+
+  if (paymentKind === 'stripe') {
+    const missing = (['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'STRIPE_PRICE_PRO', 'STRIPE_PRICE_SCALE'] as const).filter(
+      (name) => !env[name] || env[name]!.trim() === '',
+    );
+    if (missing.length > 0) {
+      throw new Error(`Stripe payment provider selected but missing config: ${missing.join(', ')}`);
+    }
+  }
 }
