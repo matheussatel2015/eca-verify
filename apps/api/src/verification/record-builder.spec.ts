@@ -13,6 +13,10 @@ test('explains an approval by age margin', () => {
     .toMatch(/25 .* 21/); // cutoff+margin
 });
 
+test('explains a low-age rejection', () => {
+  expect(explainAgeDecision({ estimatedAge: 10, livenessScore: 0.9 }, cfg, 'reprovado')).toMatch(/10 .*15/);
+});
+
 test('explains a grey-zone document requirement', () => {
   expect(explainAgeDecision({ estimatedAge: 19, livenessScore: 0.9 }, cfg, 'documento_requerido'))
     .toMatch(/zona cinzenta|grey/i);
