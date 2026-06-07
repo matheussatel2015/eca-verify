@@ -12,8 +12,8 @@ import { DocumentController } from './document.controller';
 import { VerificationService } from './verification.service';
 import { AuditService } from '../audit/audit.service';
 import { WebhookService } from '../webhook/webhook.service';
-import { MockAgeProvider } from './mock-age-provider';
-import { loadDecisionConfig, encryptionKey } from '../config';
+import { buildAgeProvider } from './provider-factory';
+import { loadDecisionConfig, encryptionKey, loadProviderConfig } from '../config';
 import { FRAME_STORE } from '../storage/frame-store.port';
 import { S3FrameStore } from '../storage/s3-frame-store';
 import { VerificationQueue } from '../queue/verification.queue';
@@ -35,7 +35,7 @@ import { IoRedisAdapter } from '../redis/ioredis.adapter';
       inject: [AuditService, WebhookService],
       useFactory: (audit: AuditService, webhook: WebhookService) =>
         new VerificationService(
-          new MockAgeProvider({ estimatedAge: 30, livenessScore: 0.95 }),
+          buildAgeProvider(loadProviderConfig(process.env)),
           audit,
           webhook,
           loadDecisionConfig(process.env),
