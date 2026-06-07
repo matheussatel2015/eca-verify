@@ -64,6 +64,30 @@ Sobe Postgres + Redis + MinIO + **API** + **worker**, roda as migrações (servi
 
 Para habilitar a **prova assinada** (JWT ES256): `cp .env.docker.example .env.docker` e preencha `PROOF_PRIVATE_KEY_B64` (veja o comando no arquivo). Sem isso, o app roda normal e os endpoints de prova retornam 503.
 
+### Modo CAF (provedor real / stub)
+
+Por padrão a app usa os provedores `mock` (idade/liveness e documento), e o
+`docker-compose.yml` **não muda**. Para exercitar o **caminho real do adapter CAF**
+sem credenciais de fornecedor, há um *stub* CAF sem dependências
+(`tools/caf-stub`) e um override de compose **opt-in**:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.caf.yml up -d --build
+```
+
+Isso mantém Postgres/Redis/MinIO + migrações da base, sobe um serviço `caf-stub`
+em `:8090` e troca `api`+`worker` para `AGE_PROVIDER_KIND=caf` /
+`DOC_VERIFIER_KIND=caf` apontando para `CAF_BASE_URL=http://caf-stub:8090`. O
+worker passa a chamar de verdade `POST /token` → `POST /transactions` → *polling*
+em `GET /transactions/:id`, e mapeia o resultado (ver `tools/caf-stub/README.md`).
+
+A idade devolvida pelo stub é configurável via `STUB_AGE_LOW` (padrão `25` →
+`aprovado`; valor na zona cinzenta, ex. `17` → `documento_requerido`).
+
+Para apontar para o **CAF real** (sandbox), nenhuma alteração de código é
+necessária: basta definir `CAF_BASE_URL` para o host real e
+`CAF_CLIENT_ID`/`CAF_CLIENT_SECRET` reais (e remover/ignorar o serviço `caf-stub`).
+
 ### Modo dev (sem containerizar a app)
 ```bash
 npm install
@@ -78,7 +102,7 @@ cd packages/plugin && node build.mjs          # bundle do plugin
 
 ## Testes
 ```bash
-npm test       # 185 testes unitários
+npm test       # 189 testes (unitários + integração CAF via HTTP real)
 ```
 Smokes manuais em `apps/api/test/*.md` (+ `smoke.http`).
 
