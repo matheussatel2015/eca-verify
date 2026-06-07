@@ -1,5 +1,6 @@
-import { BadRequestException, Body, Controller, Delete, NotFoundException, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, NotFoundException, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { TenantService } from './tenant.service';
+import { TenantSettingsService } from './tenant-settings.service';
 import { ApiKeyService } from './api-key.service';
 import { ApiKeyGuard } from './api-key.guard';
 import { RateLimitGuard } from '../ratelimit/rate-limit.guard';
@@ -15,6 +16,7 @@ export class TenantController {
   constructor(
     private readonly tenants: TenantService,
     private readonly apiKeys: ApiKeyService,
+    private readonly settings: TenantSettingsService,
   ) {}
 
   @Post('register')
@@ -48,5 +50,28 @@ export class TenantController {
     const ok = await this.apiKeys.revoke(id, req.tenant.id);
     if (!ok) throw new NotFoundException('api key not found or already revoked');
     return { revoked: id };
+  }
+
+  // Read the caller's own cutoff (and the band thresholds note lives in docs).
+  @Get('me/settings')
+  @UseGuards(ApiKeyGuard)
+  async getSettings(@Req() req: any) {
+    const requiredAge = await this.settings.getRequiredAge(req.tenant.id);
+    return { required_age: requiredAge };
+  }
+
+  // Set the caller's own cutoff. Validation + RLS protect against bad/foreign writes.
+  @Put('me/settings')
+  @UseGuards(ApiKeyGuard)
+  async setSettings(@Req() req: any, @Body() body: { required_age?: unknown }) {
+    if (typeof body.required_age !== 'number' || !Number.isInteger(body.required_age)) {
+      throw new BadRequestException('required_age must be an integer');
+    }
+    try {
+      const requiredAge = await this.settings.setRequiredAge(req.tenant.id, body.required_age);
+      return { required_age: requiredAge };
+    } catch (e) {
+      throw new BadRequestException((e as Error).message);
+    }
   }
 }
