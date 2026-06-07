@@ -13,6 +13,7 @@ function fakeDataSource() {
       webhookUrl: 'http://hook',
       webhookSecret: encryptSecret('s', Buffer.alloc(32, 9)),
     })),
+    save: jest.fn(async (_e: any, row: any) => row),
   };
   const qr = {
     connect: jest.fn(async () => {}),
@@ -68,6 +69,28 @@ test('throws when the frame has expired/missing AND still deletes (best-effort)'
     .rejects.toThrow(/frame/i);
   expect(service.verify).not.toHaveBeenCalled();
   expect(delSpy).toHaveBeenCalledWith('gone');
+});
+
+test('on documento_requerido it persists a document session and adds the token to the webhook', async () => {
+  const store = new MemoryFrameStore(() => 1000);
+  const enc = encryptFrame(Buffer.from('frame'), key);
+  await store.put('txdr', serializeFrame(enc), 300);
+  // service returns documento_requerido and (like the real service) invokes the callback to mint a token
+  const service = {
+    verify: jest.fn(async (args: any) => {
+      const payload: any = { transaction_id: 'txdr', status: 'documento_requerido', is_over_18: false };
+      if (args.issueDocumentSession) payload.document_session_token = await args.issueDocumentSession();
+      return payload;
+    }),
+  };
+  const docSessions: any[] = [];
+  const ds = fakeDataSource();
+  ds.manager.save = jest.fn(async (_e: any, row: any) => { docSessions.push(row); return row; });
+  const once = freshOnce();
+  const proc = new VerificationProcessor(store, ds as any, service as any, once as any, Buffer.alloc(32, 9));
+  await proc.process({ transactionId: 'txdr', tenantId: 'ten1', frameRef: 'txdr', rawIp: '1.2.3.4' });
+  expect(docSessions).toHaveLength(1);
+  expect(docSessions[0].transactionId).toBe('txdr');
 });
 
 test('skips verification when the transaction was already processed (idempotent retry)', async () => {
