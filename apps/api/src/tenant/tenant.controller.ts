@@ -3,6 +3,7 @@ import { TenantService } from './tenant.service';
 import { ApiKeyService } from './api-key.service';
 import { ApiKeyGuard } from './api-key.guard';
 import { RateLimitGuard } from '../ratelimit/rate-limit.guard';
+import { assertSafeWebhookUrl } from '../common/url-safety';
 
 interface RegisterBody {
   name?: unknown;
@@ -22,8 +23,13 @@ export class TenantController {
     if (typeof body.name !== 'string' || !body.name.trim()) {
       throw new BadRequestException('name is required');
     }
-    if (typeof body.webhook_url !== 'string' || !/^https?:\/\//.test(body.webhook_url)) {
+    if (typeof body.webhook_url !== 'string') {
       throw new BadRequestException('webhook_url must be an http(s) URL');
+    }
+    try {
+      assertSafeWebhookUrl(body.webhook_url);
+    } catch (e) {
+      throw new BadRequestException((e as Error).message);
     }
     return this.tenants.register({ name: body.name.trim(), webhookUrl: body.webhook_url });
   }
