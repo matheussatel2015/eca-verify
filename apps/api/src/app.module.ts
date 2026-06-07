@@ -8,6 +8,7 @@ import { AuditLog } from './audit/audit-log.entity';
 import { SessionModule } from './session/session.module';
 import { VerificationModule } from './verification/verification.module';
 import { TenantModule } from './tenant/tenant.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { TenantModule } from './tenant/tenant.module';
     SessionModule,
     VerificationModule,
     TenantModule,
+    DashboardModule,
   ],
 })
 export class AppModule {}
