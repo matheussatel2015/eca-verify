@@ -1,5 +1,6 @@
 import { BadRequestException, Body, Controller, Get, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { ApiKeyGuard } from '../tenant/api-key.guard';
+import { RateLimitGuard } from '../ratelimit/rate-limit.guard';
 import { DashboardAuthGuard } from './dashboard-auth.guard';
 import { DashboardAuthService } from './dashboard-auth.service';
 
@@ -25,6 +26,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @UseGuards(RateLimitGuard)
   async login(@Body() body: LoginBody) {
     if (typeof body.email !== 'string' || typeof body.password !== 'string') {
       throw new BadRequestException('email and password are required');
