@@ -39,7 +39,7 @@ export class DocumentProcessor {
       selfieFrame = decryptFrame(deserializeFrame(selfieBytes), this.key);
       const out = await this.verifier.verify({ documentImage: docFrame, selfieImage: selfieFrame });
       const ageFromDoc = out.birthDate ? ageFromBirthDate(out.birthDate, new Date()) : null;
-      const status = decideDocument({ ageFromDoc, faceMatchScore: out.faceMatchScore, identical: out.identical }, this.cfg.cutoffAge);
+      const status = decideDocument({ ageFromDoc, faceMatchScore: out.faceMatchScore, identical: out.identical }, this.cfg.cutoffAge, Number(process.env.DOC_FACEMATCH_MIN ?? 0.8));
       const payload: WebhookPayload = { transaction_id: job.transactionId, status, is_over_18: isOver18(status) };
 
       const qr = this.dataSource.createQueryRunner();

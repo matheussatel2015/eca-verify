@@ -14,8 +14,8 @@ export function ageFromBirthDate(isoBirthDate: string, now: Date): number {
   return age;
 }
 
-export function decideDocument(result: DocumentResult, cutoffAge: number): VerificationStatus {
-  if (!result.identical) return 'reprovado';
+export function decideDocument(result: DocumentResult, cutoffAge: number, minFaceMatch = 0.8): VerificationStatus {
+  if (!result.identical || result.faceMatchScore < minFaceMatch) return 'reprovado';
   if (result.ageFromDoc === null || result.ageFromDoc < cutoffAge) return 'reprovado';
   return 'aprovado';
 }

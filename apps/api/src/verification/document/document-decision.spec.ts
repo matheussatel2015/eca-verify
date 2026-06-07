@@ -20,3 +20,7 @@ test('reprova when underage even if faces match', () => {
 test('reprova when the document age is unknown', () => {
   expect(decideDocument({ ageFromDoc: null, faceMatchScore: 0.95, identical: true }, 18)).toBe('reprovado');
 });
+
+test('reprova when identical but face-match score is below the threshold', () => {
+  expect(decideDocument({ ageFromDoc: 30, faceMatchScore: 0.2, identical: true }, 18)).toBe('reprovado');
+});
