@@ -16,6 +16,7 @@ import { runScoped } from '../../tenant/tenant-scope';
 import { VerificationRecordService } from '../verification-record.service';
 import { ProofService } from '../../proof/proof.service';
 import { buildDocumentRecord } from './document-record-builder';
+import { classifyAgeBand } from '../age-band';
 
 export class DocumentProcessor {
   constructor(
@@ -45,11 +46,17 @@ export class DocumentProcessor {
       selfieFrame = decryptFrame(deserializeFrame(selfieBytes), this.key);
       const out = await this.verifier.verify({ documentImage: docFrame, selfieImage: selfieFrame });
       const ageFromDoc = out.birthDate ? ageFromBirthDate(out.birthDate, new Date()) : null;
-      const status = decideDocument({ ageFromDoc, faceMatchScore: out.faceMatchScore, identical: out.identical }, this.cfg.cutoffAge, Number(process.env.DOC_FACEMATCH_MIN ?? 0.8));
-      const payload: WebhookPayload = { transaction_id: job.transactionId, status, is_over_18: isOver18(status) };
 
       await runScoped(this.dataSource, job.tenantId, async (mgr) => {
         const tenant = await mgr.findOneOrFail(Tenant, { where: { id: job.tenantId } });
+        const effectiveCutoff = tenant.requiredAge ?? this.cfg.cutoffAge;
+        const status = decideDocument({ ageFromDoc, faceMatchScore: out.faceMatchScore, identical: out.identical }, effectiveCutoff, Number(process.env.DOC_FACEMATCH_MIN ?? 0.8));
+        const payload: WebhookPayload = {
+          transaction_id: job.transactionId,
+          status,
+          is_over_18: isOver18(status),
+          age_band: classifyAgeBand(ageFromDoc) ?? undefined,
+        };
         await this.audit.record({ transactionId: job.transactionId, tenantId: job.tenantId, rawIp: job.rawIp, status, now: new Date() }, mgr);
         // Sign the proof first so it can be stored verbatim alongside the method trail.
         const signedJwt = this.proof
@@ -58,7 +65,7 @@ export class DocumentProcessor {
         if (signedJwt) payload.proof = signedJwt;
         const record = buildDocumentRecord({
           transactionId: job.transactionId, tenantId: job.tenantId, status,
-          ageFromDoc, faceMatchScore: out.faceMatchScore, cutoffAge: this.cfg.cutoffAge,
+          ageFromDoc, faceMatchScore: out.faceMatchScore, cutoffAge: effectiveCutoff,
           provider: process.env.DOC_VERIFIER_KIND ?? 'mock', modelVersion: process.env.MODEL_VERSION ?? 'mock-1',
           now: new Date(),
         }) as any;

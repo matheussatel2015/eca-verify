@@ -1,4 +1,5 @@
 import { isOver18 } from '../decision';
+import { classifyAgeBand } from '../age-band';
 import { VerificationStatus } from '@eca/sdk-types';
 
 export interface DocRecordInput {
@@ -31,6 +32,7 @@ export function buildDocumentRecord(i: DocRecordInput) {
     provider: i.provider,
     modelVersion: i.modelVersion,
     decisionReason: reason,
+    ageBand: classifyAgeBand(i.ageFromDoc),
     createdAt: i.now,
   };
 }

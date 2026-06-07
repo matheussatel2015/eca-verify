@@ -8,7 +8,7 @@ import { VerificationRecordService } from '../verification-record.service';
 const key = Buffer.alloc(32, 9);
 
 function deps(verifyOut: any) {
-  const tenant = { id: 'ten1', webhookUrl: 'http://hook', webhookSecret: encryptSecret('s', key) };
+  const tenant = { id: 'ten1', webhookUrl: 'http://hook', webhookSecret: encryptSecret('s', key), requiredAge: 18 };
   const manager = { findOneOrFail: jest.fn(async () => tenant), save: jest.fn(async (_e: any, row: any) => row) };
   const qr = { connect: jest.fn(async () => {}), query: jest.fn(async () => {}), manager, release: jest.fn(async () => {}) };
   const dataSource = { createQueryRunner: () => qr };
