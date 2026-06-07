@@ -51,35 +51,36 @@ Node.js 22 · TypeScript · NestJS · TypeORM + PostgreSQL · Redis (BullMQ + ra
 
 ## Rodando localmente
 
-Pré-requisitos: Node 22 e Docker.
+Pré-requisitos: Docker (e Node 22 para o modo dev).
 
+### Tudo no Docker (recomendado)
 ```bash
-# 1. dependências
+docker compose up -d --build
+```
+Sobe Postgres + Redis + MinIO + **API** + **worker**, roda as migrações (serviço `migrate`) e cria o bucket. Depois:
+- Dashboard: http://localhost:3000/dashboard (cole uma API key — gere via `POST /tenants/register`)
+- Health: http://localhost:3000/health · JWKS: http://localhost:3000/.well-known/jwks.json
+- MinIO: http://localhost:9001 (`minioadmin`/`minioadmin`)
+
+Para habilitar a **prova assinada** (JWT ES256): `cp .env.docker.example .env.docker` e preencha `PROOF_PRIVATE_KEY_B64` (veja o comando no arquivo). Sem isso, o app roda normal e os endpoints de prova retornam 503.
+
+### Modo dev (sem containerizar a app)
+```bash
 npm install
-
-# 2. infraestrutura (Postgres + Redis + MinIO)
-docker compose up -d
-
-# 3. variáveis de ambiente
-cp .env.example .env   # ajuste APP_ENCRYPTION_KEY (64 hex) e demais valores
-
-# 4. banco
+docker compose up -d postgres redis minio
+cp .env.example .env   # ajuste APP_ENCRYPTION_KEY (64 hex)
 npx typeorm-ts-node-commonjs migration:run -d apps/api/src/db/data-source.ts
-npx ts-node apps/api/scripts/seed-tenant.ts   # imprime tenant id + API key (guarde)
-
-# 5. API + worker (em shells separados)
-npx ts-node apps/api/src/main.ts
-npx ts-node apps/api/src/worker.ts
-
-# 6. plugin (bundle)
-cd packages/plugin && node build.mjs
+npx ts-node apps/api/scripts/seed-tenant.ts   # imprime tenant id + API key
+npx ts-node apps/api/src/main.ts              # API   (shell 1)
+npx ts-node apps/api/src/worker.ts            # worker (shell 2)
+cd packages/plugin && node build.mjs          # bundle do plugin
 ```
 
 ## Testes
 ```bash
-npm test       # 62 testes unitários
+npm test       # 185 testes unitários
 ```
-Smokes manuais (exigem infra rodando): `apps/api/test/smoke.http`, `apps/api/test/scale-smoke.md`, `apps/api/test/tenant-smoke.md`.
+Smokes manuais em `apps/api/test/*.md` (+ `smoke.http`).
 
 ## API (resumo)
 | Método | Rota | Auth | Descrição |
