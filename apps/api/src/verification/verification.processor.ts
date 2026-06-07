@@ -18,6 +18,7 @@ export class VerificationProcessor {
     private readonly once: OnceGuard,
     private readonly key: Buffer,
     private readonly onceTtlMs: number = 24 * 60 * 60 * 1000,
+    private readonly discard?: import('../erasure/discard.service').DiscardService,
   ) {}
 
   async process(job: VerificationJob): Promise<void> {
@@ -60,6 +61,8 @@ export class VerificationProcessor {
     } finally {
       // Physical deletion of the temporary media — always, even if the frame was missing/expired.
       await this.store.delete(job.frameRef);
+      // Erasure proof: record that the temporary media was physically deleted.
+      await this.discard?.record({ transactionId: job.transactionId, tenantId: job.tenantId, what: 'frame', now: new Date() });
     }
   }
 }

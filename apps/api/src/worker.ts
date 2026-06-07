@@ -23,6 +23,8 @@ import { IoRedisAdapter } from './redis/ioredis.adapter';
 async function main() {
   await AppDataSource.initialize();
   const auditRepo = AppDataSource.getRepository(AuditLog);
+  const { DiscardService } = await import('./erasure/discard.service');
+  const discard = new DiscardService(AppDataSource);
 
   const audit = new AuditService(auditRepo);
   const webhook = new WebhookService();
@@ -48,7 +50,7 @@ async function main() {
   );
   const onceRedis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379');
   const once = new OnceGuard(new IoRedisAdapter(onceRedis));
-  const processor = new VerificationProcessor(store, AppDataSource, service, once, key);
+  const processor = new VerificationProcessor(store, AppDataSource, service, once, key, 24 * 60 * 60 * 1000, discard);
   const documentProcessor = new DocumentProcessor(
     store,
     AppDataSource,
@@ -61,6 +63,7 @@ async function main() {
     24 * 60 * 60 * 1000,
     records,
     proof,
+    discard,
   );
 
   const connection = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', { maxRetriesPerRequest: null });

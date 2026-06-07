@@ -14,3 +14,18 @@ export function buildVerifyPayload(sessionToken: string, frame: RawEncryptedFram
     },
   };
 }
+
+export interface SessionOpenInput {
+  userHash: string;
+  policyVersion: string;
+  consentGiven: boolean;
+}
+
+// Sent by the tenant backend (or plugin bootstrap) to POST /sessions.
+export function buildSessionOpenPayload(input: SessionOpenInput) {
+  return {
+    user_hash: input.userHash,
+    policy_version: input.policyVersion,
+    consent: input.consentGiven === true,
+  };
+}

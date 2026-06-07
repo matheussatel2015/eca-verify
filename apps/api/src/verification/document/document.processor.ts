@@ -31,6 +31,7 @@ export class DocumentProcessor {
     private readonly onceTtlMs: number = 24 * 60 * 60 * 1000,
     private readonly records: VerificationRecordService = new VerificationRecordService(),
     private readonly proof: ProofService | null = null,
+    private readonly discard?: import('../../erasure/discard.service').DiscardService,
   ) {}
 
   async process(job: DocumentJob): Promise<void> {
@@ -78,6 +79,7 @@ export class DocumentProcessor {
       zero(selfieFrame);
       await this.store.delete(job.documentRef);
       await this.store.delete(job.selfieRef);
+      await this.discard?.record({ transactionId: job.transactionId, tenantId: job.tenantId, what: 'document', now: new Date() });
     }
   }
 }

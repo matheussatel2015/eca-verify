@@ -94,6 +94,18 @@ test('on documento_requerido it persists a document session and adds the token t
   expect(docSessions[0].sessionToken).toMatch(/^[0-9a-f]{48}$/);
 });
 
+test('records a frame discard proof after a successful run', async () => {
+  const store = new MemoryFrameStore(() => 1000);
+  const enc = encryptFrame(Buffer.from('frame'), key);
+  await store.put('txd', serializeFrame(enc), 300);
+  const service = { verify: jest.fn(async () => ({ transaction_id: 'txd', status: 'aprovado', is_over_18: true })) };
+  const discard = { record: jest.fn(async () => {}) };
+  const proc = new VerificationProcessor(store, fakeDataSource() as any, service as any, freshOnce() as any, Buffer.alloc(32, 9), 24 * 60 * 60 * 1000, discard as any);
+  await proc.process({ transactionId: 'txd', tenantId: 'ten1', frameRef: 'txd', rawIp: '1.2.3.4' });
+  expect(discard.record).toHaveBeenCalledTimes(1);
+  expect(discard.record).toHaveBeenCalledWith(expect.objectContaining({ transactionId: 'txd', tenantId: 'ten1', what: 'frame' }));
+});
+
 test('skips verification when the transaction was already processed (idempotent retry)', async () => {
   const store = new MemoryFrameStore(() => 1000);
   const enc = encryptFrame(Buffer.from('frame'), key);
