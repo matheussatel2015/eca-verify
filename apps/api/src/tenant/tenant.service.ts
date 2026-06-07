@@ -29,6 +29,7 @@ export class TenantService {
       webhookUrl: input.webhookUrl,
       webhookSecret: encryptSecret(rawSecret, this.key),
       planId: 'free',
+      requiredAge: 18,
     };
     await this.tenants.save(tenant);
     const issued = await this.apiKeys.issue(tenant.id, 'default');
